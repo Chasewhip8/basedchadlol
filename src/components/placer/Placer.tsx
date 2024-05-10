@@ -192,6 +192,10 @@ const Placer: FC<PlacerProps> = () => {
                             <Button
                                 variant="destructive"
                                 className="ml-auto"
+                                onClick={() => {
+                                    setImageAddons([]);
+                                    setImage(null);
+                                }}
                             >
                                 Close Image
                             </Button>
