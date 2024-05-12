@@ -1,4 +1,4 @@
-import {FC, MouseEventHandler, useCallback, useEffect, useRef, useState} from "react";
+import {FC, MouseEventHandler, TouchEventHandler, useCallback, useEffect, useRef, useState} from "react";
 import {Card, CardContent, CardHeader} from "@/components/ui/card";
 import {Button} from "@/components/ui/button";
 import Dropzone from "react-dropzone";
@@ -8,12 +8,6 @@ import {Slider} from "@/components/ui/slider";
 export type Position = {
     x: number,
     y: number
-}
-
-function distance(a: Position, b: Position) {
-    const ad = a.x - b.x;
-    const bd = a.y - b.y;
-    return Math.sqrt(ad * ad + bd * bd);
 }
 
 enum SelectionType {
@@ -112,7 +106,8 @@ const Placer: FC<PlacerProps> = () => {
         }
     }, [image, imageAddons]);
 
-    const handleMoveSelection: MouseEventHandler = (e) => {
+    const handleMoveSelection = (clientX: number, clientY: number) => {
+        console.log("here 1")
         if (!imageAddons || !canvas.current) {
             return;
         }
@@ -124,8 +119,8 @@ const Placer: FC<PlacerProps> = () => {
 
         const rect = element.getBoundingClientRect();
 
-        const x = (e.clientX - rect.left) //  / rect.width * width;
-        const y = (e.clientY - rect.top)  //  / rect.height * height;
+        const x = (clientX - rect.left) / rect.width * element.width;
+        const y = (clientY - rect.top) / rect.height * element.height;
 
         for (const addons of imageAddons) {
             if (!addons.selected) {
@@ -145,6 +140,70 @@ const Placer: FC<PlacerProps> = () => {
 
         setImageAddons(() => [...imageAddons]);
     }
+
+    const handleStartSelection = (clientX: number, clientY: number) => {
+        console.log("here 2")
+
+        const element = canvas.current;
+        if (!element) {
+            return;
+        }
+
+        const rect = element.getBoundingClientRect();
+
+        const x = (clientX - rect.left) / rect.width * element.width;
+        const y = (clientY - rect.top) / rect.height * element.height;
+
+        const tolerance = 25;
+        let selected = false;
+        for (const box of imageAddons) {
+            box.selected = SelectionType.NONE;
+
+            const topPosition = { x: box.offsetX, y: box.offsetY };
+            const bottomPosition = { x: box.offsetX + (box.image.width * box.scale), y: box.offsetY + (box.image.height * box.scale) };
+
+            if (!selected &&
+                x >= topPosition.x - tolerance && x <= bottomPosition.x + tolerance &&
+                y >= topPosition.y - tolerance && y <= bottomPosition.y + tolerance) {
+
+                box.selectedAt = {x: x, y: y};
+                box.selected = SelectionType.MOVE;
+                selected = true;
+            }
+        }
+    }
+
+    const handleEndSelection = () => {
+        console.log("here 3")
+        for (const addons of imageAddons) {
+            addons.selected = SelectionType.NONE;
+        }
+        setImageAddons(() => [...imageAddons]);
+    }
+
+    useEffect(() => {
+        const element = canvas.current;
+        if (!element) {
+            return;
+        }
+
+        const mouseListener = (e: MouseEvent) => {
+            handleMoveSelection(e.clientX, e.clientY);
+            e.preventDefault();
+        };
+        element.addEventListener("mousemove", mouseListener, { passive: false });
+
+        const touchListener = (e: TouchEvent) => {
+            handleMoveSelection(e.touches[0].clientX, e.touches[0].clientY);
+            e.preventDefault();
+        };
+        element.addEventListener("touchmove", touchListener, { passive: false });
+
+        return () => {
+            element.removeEventListener("mousemove", mouseListener);
+            element.removeEventListener("touchmove", touchListener);
+        }
+    }, [handleMoveSelection]);
 
     return (
         <Card className="flex flex-col gap-4 p-6 mb-4">
@@ -178,43 +237,40 @@ const Placer: FC<PlacerProps> = () => {
                                 Based Chad Head
                             </Button>
                             <Button
-                                className="flex gap-x-2"
+                                className="flex gap-x-2 mr-auto"
                                 onClick={() => addAddon("/vipers.png", "Vipers")}
                             >
                                 <CirclePlusIcon/>
                                 Vipers
                             </Button>
-                            {/*<Button className="flex gap-x-2">*/}
-                            {/*    <CirclePlusIcon/>*/}
-                            {/*    Ticker*/}
-                            {/*</Button>*/}
 
-                            <Button
-                                variant="destructive"
-                                className="ml-auto"
-                                onClick={() => {
-                                    setImageAddons([]);
-                                    setImage(null);
-                                }}
-                            >
-                                Close Image
-                            </Button>
-                            <Button
-                                variant="secondary" className="flex gap-x-2 bg-solana-green"
-                                onClick={() => {
-                                    if (!canvas.current) {
-                                        return;
-                                    }
+                            <div className="flex gap-2">
+                                <Button
+                                    variant="destructive"
+                                    onClick={() => {
+                                        setImageAddons([]);
+                                        setImage(null);
+                                    }}
+                                >
+                                    Close Image
+                                </Button>
+                                <Button
+                                    variant="secondary" className="flex gap-x-2 bg-solana-green"
+                                    onClick={() => {
+                                        if (!canvas.current) {
+                                            return;
+                                        }
 
-                                    const link = document.createElement('a');
-                                    link.download = 'meme.png';
-                                    link.href = canvas.current.toDataURL()
-                                    link.click();
-                                }}
-                            >
-                                <SaveIcon/>
-                                Download
-                            </Button>
+                                        const link = document.createElement('a');
+                                        link.download = 'meme.png';
+                                        link.href = canvas.current.toDataURL()
+                                        link.click();
+                                    }}
+                                >
+                                    <SaveIcon/>
+                                    Download
+                                </Button>
+                            </div>
                         </div>
 
                         {imageAddons.map((addon, index) => (
@@ -245,46 +301,10 @@ const Placer: FC<PlacerProps> = () => {
                     </div>
                     <canvas
                         ref={canvas}
-                        onMouseMove={(e) => {
-                            if (e.buttons != 0) {
-                                handleMoveSelection(e);
-                            }
-                        }}
-                        onMouseDown={(e) => {
-                            const element = canvas.current;
-                            if (!element) {
-                                return;
-                            }
-
-                            const rect = element.getBoundingClientRect();
-
-                            const x = (e.clientX - rect.left) // / rect.width * width;
-                            const y = (e.clientY - rect.top) // / rect.height * height;
-
-                            const tolerance = 25;
-                            let selected = false;
-                            for (const box of imageAddons) {
-                                box.selected = SelectionType.NONE;
-
-                                const topPosition = { x: box.offsetX, y: box.offsetY };
-                                const bottomPosition = { x: box.offsetX + (box.image.width * box.scale), y: box.offsetY + (box.image.height * box.scale) };
-
-                                if (!selected &&
-                                    x >= topPosition.x - tolerance && x <= bottomPosition.x + tolerance &&
-                                    y >= topPosition.y - tolerance && y <= bottomPosition.y + tolerance) {
-
-                                    box.selectedAt = {x: x, y: y};
-                                    box.selected = SelectionType.MOVE;
-                                    selected = true;
-                                }
-                            }
-                        }}
-                        onMouseUp={() => {
-                            for (const addons of imageAddons) {
-                                addons.selected = SelectionType.NONE;
-                            }
-                            setImageAddons(() => [...imageAddons]);
-                        }}
+                        onMouseDown={(e) => handleStartSelection(e.clientX, e.clientY)}
+                        onTouchStart={(e) => handleStartSelection(e.touches[0].clientX, e.touches[0].clientY)}
+                        onMouseUp={handleEndSelection}
+                        onTouchEnd={handleEndSelection}
                     />
                 </>
             }
