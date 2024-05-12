@@ -106,8 +106,7 @@ const Placer: FC<PlacerProps> = () => {
         }
     }, [image, imageAddons]);
 
-    const handleMoveSelection = (clientX: number, clientY: number) => {
-        console.log("here 1")
+    const handleMoveSelection = useCallback((clientX: number, clientY: number) => {
         if (!imageAddons || !canvas.current) {
             return;
         }
@@ -139,11 +138,9 @@ const Placer: FC<PlacerProps> = () => {
         }
 
         setImageAddons(() => [...imageAddons]);
-    }
+    }, [imageAddons]);
 
     const handleStartSelection = (clientX: number, clientY: number) => {
-        console.log("here 2")
-
         const element = canvas.current;
         if (!element) {
             return;
@@ -174,7 +171,6 @@ const Placer: FC<PlacerProps> = () => {
     }
 
     const handleEndSelection = () => {
-        console.log("here 3")
         for (const addons of imageAddons) {
             addons.selected = SelectionType.NONE;
         }
