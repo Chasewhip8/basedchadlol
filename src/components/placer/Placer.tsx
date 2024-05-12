@@ -4,6 +4,7 @@ import {Button} from "@/components/ui/button";
 import Dropzone from "react-dropzone";
 import {CirclePlusIcon, SaveIcon, XIcon} from "lucide-react";
 import {Slider} from "@/components/ui/slider";
+import {Label} from "@/components/ui/label";
 
 export type Position = {
     x: number,
@@ -20,6 +21,7 @@ interface Addon {
     offsetX: number,
     offsetY: number,
     scale: number,
+    rotation: number,
     selected?: SelectionType,
     selectedAt: Position,
     name: string
@@ -72,6 +74,7 @@ const Placer: FC<PlacerProps> = () => {
                 image: image,
                 offsetX: 0,
                 offsetY: 0,
+                rotation: 0,
                 selectedAt: { x: 0, y: 0 },
                 name: name
             }])
@@ -98,11 +101,30 @@ const Placer: FC<PlacerProps> = () => {
         context.drawImage(image, 0, 0);
 
         for (const addon of imageAddons) {
+            // Assuming context is your canvas context and addon contains the necessary info
+            // Save the current context state (important if this is part of a larger drawing function)
+            context.save();
+
+            // Move the origin of the canvas to the center of where the image will be drawn
+            context.translate(
+                addon.offsetX + addon.image.width * addon.scale / 2,
+                addon.offsetY + addon.image.height * addon.scale / 2
+            );
+
+            // Rotate the canvas around the new origin
+            context.rotate(addon.rotation);
+
+            // Draw the image centered on the new origin
             context.drawImage(
                 addon.image,
-                addon.offsetX, addon.offsetY,
-                addon.image.width * addon.scale, addon.image.height * addon.scale
+                -addon.image.width * addon.scale / 2,
+                -addon.image.height * addon.scale / 2,
+                addon.image.width * addon.scale,
+                addon.image.height * addon.scale
             );
+
+            // Restore the context to its original state
+            context.restore();
         }
     }, [image, imageAddons]);
 
@@ -270,19 +292,38 @@ const Placer: FC<PlacerProps> = () => {
                         </div>
 
                         {imageAddons.map((addon, index) => (
-                            <Card key={index} className="flex flex-row items-center gap-8 p-2 px-4 justify-between">
-                                <div className="font-semibold w-full max-w-[15%]">{addon.name}</div>
+                            <Card key={index} className="flex sm:flex-row flex-col items-center gap-x-8 gap-y-4 p-4 justify-between">
+                                <div className="font-bold w-full max-w-[15%]">{addon.name}</div>
 
-                                <Slider
-                                    max={1.5}
-                                    min={0.001}
-                                    step={0.0005}
-                                    value={[addon.scale]}
-                                    onValueChange={([newValue]) => {
-                                        addon.scale = newValue;
-                                        setImageAddons(() => [...imageAddons]);
-                                    }}
-                                />
+                                <div className="flex flex-wrap w-full gap-4">
+                                    <Label className="w-full gap-y-2 flex flex-col">
+                                        Scale
+                                        <Slider
+                                            max={3}
+                                            min={0.001}
+                                            step={0.0005}
+                                            value={[addon.scale]}
+                                            onValueChange={([newValue]) => {
+                                                addon.scale = newValue;
+                                                setImageAddons(() => [...imageAddons]);
+                                            }}
+                                        />
+                                    </Label>
+
+                                    <Label className="w-full gap-y-2 flex flex-col">
+                                        Rotation
+                                        <Slider
+                                            max={6.28}
+                                            min={0}
+                                            step={0.0005}
+                                            value={[addon.rotation]}
+                                            onValueChange={([newValue]) => {
+                                                addon.rotation = newValue;
+                                                setImageAddons(() => [...imageAddons]);
+                                            }}
+                                        />
+                                    </Label>
+                                </div>
 
                                 <Button
                                     className="px-2"

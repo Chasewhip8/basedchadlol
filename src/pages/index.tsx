@@ -2,11 +2,12 @@ import {Inter} from "next/font/google";
 import {cn} from "@/lib/utils";
 import Placer from "@/components/placer/Placer";
 import {Button} from "@/components/ui/button";
-import {TwitterIcon, Clipboard, ClipboardCheckIcon} from "lucide-react";
+import {TwitterIcon, Clipboard, ClipboardCheckIcon, ExternalLinkIcon} from "lucide-react";
 import {Card} from "@/components/ui/card";
 import Image from "next/image";
 import {useState} from "react";
 import Link from "next/link";
+import {TwitterShareButton} from "react-share";
 
 const inter = Inter({subsets: ["latin"]});
 const address = "E7eq75v6muvR7KSoc3ayWCukBcdDtCauvAq1DWKsqhPV";
@@ -63,6 +64,16 @@ export default function Home() {
                         </Button>
                     </Link>
                 </div>
+
+                <TwitterShareButton
+                    url="https://basedchad.lol/"
+                    title="I'm based"
+                >
+                    <Button className="flex gap-x-3 items-center justify-center bg-no-repeat bg-gradient-to-br from-solana-green to-solana-purple font-semibold">
+                        Share on Twitter
+                        <ExternalLinkIcon/>
+                    </Button>
+                </TwitterShareButton>
             </div>
 
             <div className="mt-16 max-w-full">
