@@ -5,7 +5,7 @@ import {Button} from "@/components/ui/button";
 import {TwitterIcon, Clipboard, ClipboardCheckIcon, ExternalLinkIcon} from "lucide-react";
 import {Card} from "@/components/ui/card";
 import Image from "next/image";
-import {useState} from "react";
+import {useEffect, useState} from "react";
 import Link from "next/link";
 import {TwitterShareButton} from "react-share";
 
@@ -14,6 +14,13 @@ const address = "E7eq75v6muvR7KSoc3ayWCukBcdDtCauvAq1DWKsqhPV";
 
 export default function Home() {
     const [copied, setCopied] = useState(false);
+
+    // Fix hydration error in react-share
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
     return (
         <main className={cn("flex flex-col gap-y-12 mt-20 mx-2 items-center", inter.className)}>
             <div className="fixed bottom-0 -z-10 overflow-hidden w-max">
@@ -65,15 +72,17 @@ export default function Home() {
                     </Link>
                 </div>
 
-                <TwitterShareButton
-                    url="https://basedchad.lol/"
-                    title="I'm based"
-                >
-                    <Button className="flex gap-x-3 items-center justify-center bg-no-repeat bg-gradient-to-br from-solana-green to-solana-purple font-semibold">
-                        Share on Twitter
-                        <ExternalLinkIcon/>
-                    </Button>
-                </TwitterShareButton>
+                {mounted &&
+                    <TwitterShareButton
+                        url="https://basedchad.lol/"
+                        title="I'm based"
+                    >
+                        <Button className="flex gap-x-3 items-center justify-center bg-no-repeat bg-gradient-to-br from-solana-green to-solana-purple font-semibold">
+                            Share on Twitter
+                            <ExternalLinkIcon/>
+                        </Button>
+                    </TwitterShareButton>
+                }
             </div>
 
             <div className="mt-16 max-w-full">
