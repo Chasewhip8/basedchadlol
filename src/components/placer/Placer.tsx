@@ -270,8 +270,8 @@ const Placer: FC<PlacerProps> = () => {
                         </div>
 
                         {imageAddons.map((addon, index) => (
-                            <Card key={index} className="flex flex-row items-center p-2 px-4 justify-between">
-                                <span className="font-semibold">{addon.name}</span>
+                            <Card key={index} className="flex flex-row items-center gap-8 p-2 px-4 justify-between">
+                                <div className="font-semibold w-full max-w-[15%]">{addon.name}</div>
 
                                 <Slider
                                     max={1.5}
@@ -282,10 +282,10 @@ const Placer: FC<PlacerProps> = () => {
                                         addon.scale = newValue;
                                         setImageAddons(() => [...imageAddons]);
                                     }}
-                                    className="w-[60%]"
                                 />
 
                                 <Button
+                                    className="px-2"
                                     size="icon"
                                     variant="destructive"
                                     onClick={() => setImageAddons((prevState) => prevState.filter((a) => a != addon))}

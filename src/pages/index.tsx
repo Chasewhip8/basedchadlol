@@ -43,7 +43,7 @@ export default function Home() {
                     {copied ? <ClipboardCheckIcon/> : <Clipboard/>}
                 </Card>
 
-                <div className="flex gap-4">
+                <div className="flex gap-x-4 gap-y-2 flex-wrap justify-center">
                     <Link href="https://twitter.com/basedsolanachad" target="_blank">
                         <Button size="lg" className="gap-x-2">
                             <TwitterIcon/>
