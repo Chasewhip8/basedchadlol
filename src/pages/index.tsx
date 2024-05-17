@@ -64,10 +64,10 @@ export default function Home() {
                             Telegram
                         </Button>
                     </Link>
-                    <Link href="https://pump.fun/E7eq75v6muvR7KSoc3ayWCukBcdDtCauvAq1DWKsqhPV" target="_blank">
+                    <Link href="https://birdeye.so/token/E7eq75v6muvR7KSoc3ayWCukBcdDtCauvAq1DWKsqhPV?chain=solana" target="_blank">
                         <Button size="lg" className="gap-x-2">
-                            <Image className="pr-1" src="/pump.webp" alt="telegram logo" width={24} height={24} />
-                            Pump
+                            <Image className="pr-1" src="/birdeye.png" alt="telegram logo" width={32} height={24} />
+                            Birdeye
                         </Button>
                     </Link>
                 </div>
