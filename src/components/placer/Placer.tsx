@@ -1,35 +1,41 @@
-import {FC, MouseEventHandler, TouchEventHandler, useCallback, useEffect, useRef, useState} from "react";
-import {Card, CardContent, CardHeader} from "@/components/ui/card";
-import {Button} from "@/components/ui/button";
+import {
+    FC,
+    MouseEventHandler,
+    TouchEventHandler,
+    useCallback,
+    useEffect,
+    useRef,
+    useState,
+} from "react";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import Dropzone from "react-dropzone";
-import {CirclePlusIcon, SaveIcon, XIcon} from "lucide-react";
-import {Slider} from "@/components/ui/slider";
-import {Label} from "@/components/ui/label";
+import { CirclePlusIcon, SaveIcon, XIcon } from "lucide-react";
+import { Slider } from "@/components/ui/slider";
+import { Label } from "@/components/ui/label";
 
 export type Position = {
-    x: number,
-    y: number
-}
+    x: number;
+    y: number;
+};
 
 enum SelectionType {
     NONE,
-    MOVE
+    MOVE,
 }
 
 interface Addon {
-    image: HTMLImageElement,
-    offsetX: number,
-    offsetY: number,
-    scale: number,
-    rotation: number,
-    selected?: SelectionType,
-    selectedAt: Position,
-    name: string
+    image: HTMLImageElement;
+    offsetX: number;
+    offsetY: number;
+    scale: number;
+    rotation: number;
+    selected?: SelectionType;
+    selectedAt: Position;
+    name: string;
 }
 
-interface PlacerProps {
-
-}
+interface PlacerProps {}
 
 const Placer: FC<PlacerProps> = () => {
     const canvas = useRef<HTMLCanvasElement>(null);
@@ -41,27 +47,27 @@ const Placer: FC<PlacerProps> = () => {
             const reader = new FileReader();
 
             reader.onabort = () => {
-                console.log('file reading was aborted');
-            }
+                console.log("file reading was aborted");
+            };
             reader.onerror = () => {
                 // TODO
-                console.log('file reading has failed');
-            }
+                console.log("file reading has failed");
+            };
             reader.onload = () => {
                 const image = new Image();
 
                 image.onload = () => {
                     setImage(image);
-                }
+                };
                 image.onerror = () => {
                     // TODO
-                    console.log('file reading has failed');
-                }
+                    console.log("file reading has failed");
+                };
 
                 image.src = reader.result as string;
-            }
-            reader.readAsDataURL(file)
-        })
+            };
+            reader.readAsDataURL(file);
+        });
     }, []);
 
     const [imageAddons, setImageAddons] = useState<Addon[]>([]);
@@ -69,20 +75,23 @@ const Placer: FC<PlacerProps> = () => {
         const image = new Image();
 
         image.onload = () => {
-            setImageAddons((prevState) => [...prevState, {
-                scale: 0.5,
-                image: image,
-                offsetX: 0,
-                offsetY: 0,
-                rotation: 0,
-                selectedAt: { x: 0, y: 0 },
-                name: name
-            }])
-        }
+            setImageAddons((prevState) => [
+                ...prevState,
+                {
+                    scale: 0.5,
+                    image: image,
+                    offsetX: 0,
+                    offsetY: 0,
+                    rotation: 0,
+                    selectedAt: { x: 0, y: 0 },
+                    name: name,
+                },
+            ]);
+        };
         image.onerror = () => {
             // TODO
-            console.log('file reading has failed');
-        }
+            console.log("file reading has failed");
+        };
         image.src = src;
     }
 
@@ -107,8 +116,8 @@ const Placer: FC<PlacerProps> = () => {
 
             // Move the origin of the canvas to the center of where the image will be drawn
             context.translate(
-                addon.offsetX + addon.image.width * addon.scale / 2,
-                addon.offsetY + addon.image.height * addon.scale / 2
+                addon.offsetX + (addon.image.width * addon.scale) / 2,
+                addon.offsetY + (addon.image.height * addon.scale) / 2,
             );
 
             // Rotate the canvas around the new origin
@@ -117,10 +126,10 @@ const Placer: FC<PlacerProps> = () => {
             // Draw the image centered on the new origin
             context.drawImage(
                 addon.image,
-                -addon.image.width * addon.scale / 2,
-                -addon.image.height * addon.scale / 2,
+                (-addon.image.width * addon.scale) / 2,
+                (-addon.image.height * addon.scale) / 2,
                 addon.image.width * addon.scale,
-                addon.image.height * addon.scale
+                addon.image.height * addon.scale,
             );
 
             // Restore the context to its original state
@@ -128,39 +137,42 @@ const Placer: FC<PlacerProps> = () => {
         }
     }, [image, imageAddons]);
 
-    const handleMoveSelection = useCallback((clientX: number, clientY: number) => {
-        if (!imageAddons || !canvas.current) {
-            return;
-        }
-
-        const element = canvas.current;
-        if (!element) {
-            return;
-        }
-
-        const rect = element.getBoundingClientRect();
-
-        const x = (clientX - rect.left) / rect.width * element.width;
-        const y = (clientY - rect.top) / rect.height * element.height;
-
-        for (const addons of imageAddons) {
-            if (!addons.selected) {
-                continue;
+    const handleMoveSelection = useCallback(
+        (clientX: number, clientY: number) => {
+            if (!imageAddons || !canvas.current) {
+                return;
             }
 
-            switch (addons.selected) {
-                case SelectionType.MOVE:
-                    addons.offsetX += x - addons.selectedAt.x;
-                    addons.offsetY += y - addons.selectedAt.y;
-                    break;
+            const element = canvas.current;
+            if (!element) {
+                return;
             }
 
-            addons.selectedAt.x = x;
-            addons.selectedAt.y = y;
-        }
+            const rect = element.getBoundingClientRect();
 
-        setImageAddons(() => [...imageAddons]);
-    }, [imageAddons]);
+            const x = ((clientX - rect.left) / rect.width) * element.width;
+            const y = ((clientY - rect.top) / rect.height) * element.height;
+
+            for (const addons of imageAddons) {
+                if (!addons.selected) {
+                    continue;
+                }
+
+                switch (addons.selected) {
+                    case SelectionType.MOVE:
+                        addons.offsetX += x - addons.selectedAt.x;
+                        addons.offsetY += y - addons.selectedAt.y;
+                        break;
+                }
+
+                addons.selectedAt.x = x;
+                addons.selectedAt.y = y;
+            }
+
+            setImageAddons(() => [...imageAddons]);
+        },
+        [imageAddons],
+    );
 
     const handleStartSelection = (clientX: number, clientY: number) => {
         const element = canvas.current;
@@ -170,8 +182,8 @@ const Placer: FC<PlacerProps> = () => {
 
         const rect = element.getBoundingClientRect();
 
-        const x = (clientX - rect.left) / rect.width * element.width;
-        const y = (clientY - rect.top) / rect.height * element.height;
+        const x = ((clientX - rect.left) / rect.width) * element.width;
+        const y = ((clientY - rect.top) / rect.height) * element.height;
 
         const tolerance = 25;
         let selected = false;
@@ -179,25 +191,31 @@ const Placer: FC<PlacerProps> = () => {
             box.selected = SelectionType.NONE;
 
             const topPosition = { x: box.offsetX, y: box.offsetY };
-            const bottomPosition = { x: box.offsetX + (box.image.width * box.scale), y: box.offsetY + (box.image.height * box.scale) };
+            const bottomPosition = {
+                x: box.offsetX + box.image.width * box.scale,
+                y: box.offsetY + box.image.height * box.scale,
+            };
 
-            if (!selected &&
-                x >= topPosition.x - tolerance && x <= bottomPosition.x + tolerance &&
-                y >= topPosition.y - tolerance && y <= bottomPosition.y + tolerance) {
-
-                box.selectedAt = {x: x, y: y};
+            if (
+                !selected &&
+                x >= topPosition.x - tolerance &&
+                x <= bottomPosition.x + tolerance &&
+                y >= topPosition.y - tolerance &&
+                y <= bottomPosition.y + tolerance
+            ) {
+                box.selectedAt = { x: x, y: y };
                 box.selected = SelectionType.MOVE;
                 selected = true;
             }
         }
-    }
+    };
 
     const handleEndSelection = () => {
         for (const addons of imageAddons) {
             addons.selected = SelectionType.NONE;
         }
         setImageAddons(() => [...imageAddons]);
-    }
+    };
 
     useEffect(() => {
         const element = canvas.current;
@@ -209,57 +227,70 @@ const Placer: FC<PlacerProps> = () => {
             handleMoveSelection(e.clientX, e.clientY);
             e.preventDefault();
         };
-        element.addEventListener("mousemove", mouseListener, { passive: false });
+        element.addEventListener("mousemove", mouseListener, {
+            passive: false,
+        });
 
         const touchListener = (e: TouchEvent) => {
             handleMoveSelection(e.touches[0].clientX, e.touches[0].clientY);
             e.preventDefault();
         };
-        element.addEventListener("touchmove", touchListener, { passive: false });
+        element.addEventListener("touchmove", touchListener, {
+            passive: false,
+        });
 
         return () => {
             element.removeEventListener("mousemove", mouseListener);
             element.removeEventListener("touchmove", touchListener);
-        }
+        };
     }, [handleMoveSelection]);
 
     return (
         <Card className="flex flex-col gap-4 p-6 mb-4">
             <h2 className="text-3xl font-semibold">Be Based, Create Memes</h2>
 
-            {!image ?
+            {!image ? (
                 <Dropzone ref={dragZone} onDrop={onDrop}>
-                    {({getRootProps, getInputProps}) => (
-                        <Card className="border-dashed p-8 text-center cursor-pointer"  {...getRootProps()}>
+                    {({ getRootProps, getInputProps }) => (
+                        <Card
+                            className="border-dashed p-8 text-center cursor-pointer"
+                            {...getRootProps()}
+                        >
                             <input {...getInputProps()} />
                             Drag or Click to upload image
                         </Card>
                     )}
                 </Dropzone>
-                :
+            ) : (
                 <>
                     <div className="flex flex-col gap-y-2">
                         <div className="flex gap-2 flex-wrap">
                             <Button
-                                variant="secondary" className="flex gap-x-2 bg-no-repeat bg-gradient-to-br from-solana-green to-solana-purple font-semibold"
+                                className="flex gap-x-2"
+                                onClick={() =>
+                                    addAddon("/vipers.png", "Vipers")
+                                }
+                            >
+                                <CirclePlusIcon />
+                                Vipers
+                            </Button>
+                            <Button
+                                variant="secondary"
+                                className="flex gap-x-2"
                                 onClick={() => addAddon("/chad.png", "Chad")}
                             >
-                                <CirclePlusIcon/>
+                                <CirclePlusIcon />
                                 Based Chad
                             </Button>
                             <Button
-                                variant="secondary" className="flex gap-x-2 bg-no-repeat bg-gradient-to-br from-solana-green to-solana-purple font-semibold"
-                                onClick={() => addAddon("/chad_head.png", "Chad Head")}
-                            >
-                                <CirclePlusIcon/>
-                                Based Chad Head
-                            </Button>
-                            <Button
+                                variant="secondary"
                                 className="flex gap-x-2 mr-auto"
-                                onClick={() => addAddon("/vipers.png", "Vipers")}
+                                onClick={() =>
+                                    addAddon("/chad_head.png", "Chad Head")
+                                }
                             >
-                                <CirclePlusIcon/>
-                                Vipers
+                                <CirclePlusIcon />
+                                Based Chad Head
                             </Button>
 
                             <div className="flex gap-2">
@@ -273,27 +304,34 @@ const Placer: FC<PlacerProps> = () => {
                                     Close Image
                                 </Button>
                                 <Button
-                                    variant="secondary" className="flex gap-x-2 bg-solana-green"
+                                    variant="constructive"
+                                    className="flex gap-x-2"
                                     onClick={() => {
                                         if (!canvas.current) {
                                             return;
                                         }
 
-                                        const link = document.createElement('a');
-                                        link.download = 'meme.png';
-                                        link.href = canvas.current.toDataURL()
+                                        const link =
+                                            document.createElement("a");
+                                        link.download = "meme.png";
+                                        link.href = canvas.current.toDataURL();
                                         link.click();
                                     }}
                                 >
-                                    <SaveIcon/>
+                                    <SaveIcon />
                                     Download
                                 </Button>
                             </div>
                         </div>
 
                         {imageAddons.map((addon, index) => (
-                            <Card key={index} className="flex sm:flex-row flex-col items-center gap-x-8 gap-y-4 p-4 justify-between">
-                                <div className="font-bold w-full max-w-[15%]">{addon.name}</div>
+                            <Card
+                                key={index}
+                                className="flex sm:flex-row flex-col items-center gap-x-8 gap-y-4 p-4 justify-between"
+                            >
+                                <div className="font-bold w-full max-w-[15%]">
+                                    {addon.name}
+                                </div>
 
                                 <div className="flex flex-wrap w-full gap-4">
                                     <Label className="w-full gap-y-2 flex flex-col">
@@ -305,7 +343,9 @@ const Placer: FC<PlacerProps> = () => {
                                             value={[addon.scale]}
                                             onValueChange={([newValue]) => {
                                                 addon.scale = newValue;
-                                                setImageAddons(() => [...imageAddons]);
+                                                setImageAddons(() => [
+                                                    ...imageAddons,
+                                                ]);
                                             }}
                                         />
                                     </Label>
@@ -319,7 +359,9 @@ const Placer: FC<PlacerProps> = () => {
                                             value={[addon.rotation]}
                                             onValueChange={([newValue]) => {
                                                 addon.rotation = newValue;
-                                                setImageAddons(() => [...imageAddons]);
+                                                setImageAddons(() => [
+                                                    ...imageAddons,
+                                                ]);
                                             }}
                                         />
                                     </Label>
@@ -329,24 +371,35 @@ const Placer: FC<PlacerProps> = () => {
                                     className="px-2"
                                     size="icon"
                                     variant="destructive"
-                                    onClick={() => setImageAddons((prevState) => prevState.filter((a) => a != addon))}
+                                    onClick={() =>
+                                        setImageAddons((prevState) =>
+                                            prevState.filter((a) => a != addon),
+                                        )
+                                    }
                                 >
-                                    <XIcon/>
+                                    <XIcon />
                                 </Button>
                             </Card>
                         ))}
                     </div>
                     <canvas
                         ref={canvas}
-                        onMouseDown={(e) => handleStartSelection(e.clientX, e.clientY)}
-                        onTouchStart={(e) => handleStartSelection(e.touches[0].clientX, e.touches[0].clientY)}
+                        onMouseDown={(e) =>
+                            handleStartSelection(e.clientX, e.clientY)
+                        }
+                        onTouchStart={(e) =>
+                            handleStartSelection(
+                                e.touches[0].clientX,
+                                e.touches[0].clientY,
+                            )
+                        }
                         onMouseUp={handleEndSelection}
                         onTouchEnd={handleEndSelection}
                     />
                 </>
-            }
+            )}
         </Card>
-    )
-}
+    );
+};
 
 export default Placer;

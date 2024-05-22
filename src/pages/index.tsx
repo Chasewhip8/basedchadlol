@@ -13,8 +13,7 @@ import Link from "next/link";
 import { TwitterShareButton } from "react-share";
 import DefaultLayout from "@/components/DefaultLayout";
 import { NextPageWithLayout } from "./_app";
-
-const address = "E7eq75v6muvR7KSoc3ayWCukBcdDtCauvAq1DWKsqhPV";
+import { TOKEN_MINT } from "@/lib/config";
 
 const Home: NextPageWithLayout = () => {
     const [copied, setCopied] = useState(false);
@@ -46,12 +45,12 @@ const Home: NextPageWithLayout = () => {
                 <Card
                     className="flex flex-row gap-x-4 p-4 cursor-pointer items-center"
                     onClick={() => {
-                        navigator.clipboard.writeText(address);
+                        navigator.clipboard.writeText(TOKEN_MINT);
                         setCopied(true);
                         setTimeout(() => setCopied(false), 2 * 1000);
                     }}
                 >
-                    <span className="break-all">{address}</span>
+                    <span className="break-all">{TOKEN_MINT}</span>
                     {copied ? <ClipboardCheckIcon /> : <Clipboard />}
                 </Card>
 
@@ -105,18 +104,6 @@ const Home: NextPageWithLayout = () => {
                         </Button>
                     </Link>
                 </div>
-                {/*
-                {mounted && (
-                    <TwitterShareButton
-                        url="https://basedchad.lol/"
-                        title="I'm based"
-                    >
-                        <Button className="flex gap-x-3 items-center justify-center bg-no-repeat bg-gradient-to-br from-solana-green to-solana-purple font-semibold">
-                            Share on Twitter
-                            <ExternalLinkIcon />
-                        </Button>
-                    </TwitterShareButton>
-                )} */}
             </div>
 
             <div className="mt-12 max-w-full">

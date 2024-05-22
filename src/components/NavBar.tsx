@@ -1,11 +1,7 @@
 import { FC } from "react";
 import NavButton from "./NavButton";
 import Image from "next/image";
-import { useRouter } from "next/router";
-import {
-    WalletDisconnectButton,
-    WalletMultiButton,
-} from "@solana/wallet-adapter-react-ui";
+import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { useWallet } from "@solana/wallet-adapter-react";
 
 const NavBar: FC = () => {
@@ -17,7 +13,9 @@ const NavBar: FC = () => {
                 <Image src="/chad.png" alt="logo" width={60} height={60} />
             </span>
             <NavButton href="/">Home</NavButton>
-            <NavButton href="/swap">Swap</NavButton>
+            <NavButton disabled href="/swap">
+                Swap
+            </NavButton>
 
             <NavButton disabled href="/liquidity">
                 Liquidity

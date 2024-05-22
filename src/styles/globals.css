@@ -54,8 +54,8 @@
         --border: 220 10% 25%;
         --input: 220 10% 25%;
 
-        --primary: 267 100% 64%;
-        --primary-foreground: 220 20% 10%;
+        --primary: 225 56% 57%;
+        --primary-foreground: 0 0% 100%;
 
         --secondary: 220 10% 25%;
         --secondary-foreground: 220 20% 90%;
@@ -64,7 +64,10 @@
         --accent-foreground: 220 20% 90%;
 
         --destructive: 0 60% 50%;
-        --destructive-foreground: 220 20% 90%;
+        --destructive-foreground: 0 0% 100%;
+
+        --constructive: 155 80% 39%;
+        --constructive-foreground: 0 0% 100%;
 
         --ring: 220 60% 50%;
 
@@ -90,4 +93,9 @@
 
 .wallet-adapter-dropdown-list {
     @apply fixed right-8 top-16 z-10;
+}
+
+.wallet-adapter-button {
+    @apply inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50;
+    @apply bg-primary text-primary-foreground hover:bg-primary/90;
 }

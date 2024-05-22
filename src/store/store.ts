@@ -11,14 +11,6 @@ export interface GlobalSettings extends PersistedGlobalSettings {
     setMaxSlippageBps: (maxSlippageBps: number) => void;
 }
 
-export interface SwapSlice {
-    inputTokens: string[];
-    addInputTokens: (newTokens: string[]) => void;
-    outputToken: string | null;
-}
-
-type Store = CacheSlice & GlobalSettings & SwapSlice;
-
 const createGlobalSettingsSlice: StateCreator<Store, [], [], GlobalSettings> = (
     set,
 ) => ({
@@ -29,12 +21,20 @@ const createGlobalSettingsSlice: StateCreator<Store, [], [], GlobalSettings> = (
         })),
 });
 
+export interface SwapSlice {
+    inputTokens: string[];
+    addInputToken: (newToken: string) => void;
+    outputToken: string | null;
+}
+
 const createSwapSlice: StateCreator<Store, [], [], SwapSlice> = (set) => ({
     inputTokens: [],
-    addInputTokens: (newTokens: string[]) =>
-        set((state) => ({ inputTokens: [...state.inputTokens, ...newTokens] })),
+    addInputToken: (newToken: string) =>
+        set((state) => ({ inputTokens: [...state.inputTokens, newToken] })),
     outputToken: null,
 });
+
+type Store = CacheSlice & GlobalSettings & SwapSlice;
 
 const useStore = create<Store, [["zustand/persist", PersistedGlobalSettings]]>(
     persist(
