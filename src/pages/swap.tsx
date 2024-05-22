@@ -5,8 +5,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import MultiTokenSelect from "@/components/swap/MultiTokenSelect";
 
 const Swap: NextPageWithLayout = () => {
-    return "";
-
     return (
         <div className="flex flex-col gap-y-4 justify-start mt-20 max-w-[600px]">
             <div className="space-y-1">
