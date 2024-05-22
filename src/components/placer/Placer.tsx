@@ -70,6 +70,20 @@ const Placer: FC<PlacerProps> = () => {
         });
     }, []);
 
+    useEffect(() => {
+        const handlePaste = (e: ClipboardEvent) => {
+            const files = e.clipboardData?.files;
+            if (!files) {
+                return;
+            }
+
+            onDrop(Array.from(files));
+        };
+
+        document.addEventListener("paste", handlePaste);
+        return () => document.removeEventListener("paste", handlePaste);
+    }, [onDrop]);
+
     const [imageAddons, setImageAddons] = useState<Addon[]>([]);
     function addAddon(src: string, name: string) {
         const image = new Image();
@@ -354,7 +368,7 @@ const Placer: FC<PlacerProps> = () => {
                                         Rotation
                                         <Slider
                                             max={6.28}
-                                            min={0}
+                                            min={-6.28}
                                             step={0.0005}
                                             value={[addon.rotation]}
                                             onValueChange={([newValue]) => {
@@ -383,6 +397,7 @@ const Placer: FC<PlacerProps> = () => {
                         ))}
                     </div>
                     <canvas
+                        className="max-w-full"
                         ref={canvas}
                         onMouseDown={(e) =>
                             handleStartSelection(e.clientX, e.clientY)
