@@ -3,6 +3,7 @@ import { ReactElement } from "react";
 import { NextPageWithLayout } from "./_app";
 import { Card, CardContent } from "@/components/ui/card";
 import MultiTokenSelect from "@/components/swap/MultiTokenSelect";
+import Loading from "@/components/Loading";
 
 const Swap: NextPageWithLayout = () => {
     return (

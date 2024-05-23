@@ -1,7 +1,22 @@
+import { Token } from "@/lib/jupyter";
 import { StateCreator, create } from "zustand";
 import { persist } from "zustand/middleware";
 
-export interface CacheSlice {}
+export interface CacheSlice {
+    strictTokenList: Token[] | null;
+    otherTokenList: Token[] | null;
+    setTokenLists: (strictTokenList: Token[], otherTokenList: Token[]) => void;
+}
+
+const createCacheSlice: StateCreator<Store, [], [], CacheSlice> = (set) => ({
+    strictTokenList: null,
+    otherTokenList: null,
+    setTokenLists: (strictTokenList: Token[], otherTokenList: Token[]) =>
+        set(() => ({
+            strictTokenList: strictTokenList,
+            otherTokenList: otherTokenList,
+        })),
+});
 
 export interface PersistedGlobalSettings {
     maxSlippageBps: number;
@@ -38,9 +53,10 @@ type Store = CacheSlice & GlobalSettings & SwapSlice;
 
 const useStore = create<Store, [["zustand/persist", PersistedGlobalSettings]]>(
     persist(
-        (set, get, api) => ({
-            ...createGlobalSettingsSlice(set, get, api),
-            ...createSwapSlice(set, get, api),
+        (...a) => ({
+            ...createCacheSlice(...a),
+            ...createGlobalSettingsSlice(...a),
+            ...createSwapSlice(...a),
         }),
         {
             name: "global-settings-store",
