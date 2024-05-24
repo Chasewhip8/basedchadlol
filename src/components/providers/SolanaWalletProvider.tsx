@@ -6,7 +6,7 @@ import {
 import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
 import { CLUSTER_URL } from "@/lib/config";
 
-const SolanaProvider: FC<PropsWithChildren> = ({ children }) => {
+const SolanaWalletProvider: FC<PropsWithChildren> = ({ children }) => {
     const wallets = useMemo(() => [], []);
     return (
         <ConnectionProvider endpoint={CLUSTER_URL}>
@@ -17,4 +17,4 @@ const SolanaProvider: FC<PropsWithChildren> = ({ children }) => {
     );
 };
 
-export default SolanaProvider;
+export default SolanaWalletProvider;

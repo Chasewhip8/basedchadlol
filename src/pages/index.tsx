@@ -10,7 +10,6 @@ import { Card } from "@/components/ui/card";
 import Image from "next/image";
 import { ReactElement, useEffect, useState } from "react";
 import Link from "next/link";
-import { TwitterShareButton } from "react-share";
 import DefaultLayout from "@/components/DefaultLayout";
 import { NextPageWithLayout } from "./_app";
 import { TOKEN_MINT } from "@/lib/config";

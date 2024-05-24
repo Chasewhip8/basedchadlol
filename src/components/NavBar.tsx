@@ -2,6 +2,8 @@ import { FC } from "react";
 import NavButton from "./NavButton";
 import Image from "next/image";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
+import { Button } from "./ui/button";
+import { SettingsIcon } from "lucide-react";
 
 const NavBar: FC = () => {
     return (
@@ -19,14 +21,21 @@ const NavBar: FC = () => {
                     Vote
                 </NavButton>
 
-                <div className="w-1 h-6 mx-2 rounded-md bg-card"></div>
+                <div className="w-0.5 h-6 mx-2 rounded-md bg-border"></div>
 
                 <NavButton disabled external href="">
                     Docs
                 </NavButton>
             </div>
 
-            <div className="ml-auto">
+            <div className="ml-auto flex flex-row gap-x-2 items-center">
+                <Button
+                    variant="outline"
+                    size="icon"
+                    className="rounded-full h-12 w-12 flex-shrink-0"
+                >
+                    <SettingsIcon />
+                </Button>
                 <WalletMultiButton />
             </div>
         </div>

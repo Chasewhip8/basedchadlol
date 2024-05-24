@@ -1,20 +1,24 @@
-import { Token } from "@/lib/jupyter";
+import { Token, TokenInfoList, TokenList } from "@/lib/token";
 import { StateCreator, create } from "zustand";
 import { persist } from "zustand/middleware";
 
 export interface CacheSlice {
-    strictTokenList: Token[] | null;
-    otherTokenList: Token[] | null;
-    setTokenLists: (strictTokenList: Token[], otherTokenList: Token[]) => void;
+    tokenList: TokenList | null;
+    setTokenList: (list: TokenList) => void;
+    tokenInfoList: TokenInfoList | null;
+    setTokenInfoList: (list: TokenInfoList) => void;
 }
 
 const createCacheSlice: StateCreator<Store, [], [], CacheSlice> = (set) => ({
-    strictTokenList: null,
-    otherTokenList: null,
-    setTokenLists: (strictTokenList: Token[], otherTokenList: Token[]) =>
+    tokenList: null,
+    setTokenList: (list: TokenList) =>
         set(() => ({
-            strictTokenList: strictTokenList,
-            otherTokenList: otherTokenList,
+            tokenList: list,
+        })),
+    tokenInfoList: null,
+    setTokenInfoList: (list: TokenInfoList) =>
+        set(() => ({
+            tokenInfoList: list,
         })),
 });
 
@@ -39,6 +43,8 @@ const createGlobalSettingsSlice: StateCreator<Store, [], [], GlobalSettings> = (
 export interface SwapSlice {
     inputTokens: string[];
     addInputToken: (newToken: string) => void;
+    removeInputToken: (token: string) => void;
+    clearInputTokens: (newToken: string) => void;
     outputToken: string | null;
 }
 
@@ -46,6 +52,10 @@ const createSwapSlice: StateCreator<Store, [], [], SwapSlice> = (set) => ({
     inputTokens: [],
     addInputToken: (newToken: string) =>
         set((state) => ({ inputTokens: [...state.inputTokens, newToken] })),
+    addInputToken: (token: string) =>
+        set((state) => ({
+            inputTokens: state.inputTokens.filter((t) => t !== token),
+        })),
     outputToken: null,
 });
 
