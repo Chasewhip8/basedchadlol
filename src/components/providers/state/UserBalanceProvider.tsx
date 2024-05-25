@@ -1,6 +1,6 @@
 import { CLUSTER_URL } from "@/lib/config";
 import { DAS } from "@/lib/helius";
-import { TokenWithInfoList } from "@/lib/token";
+import { Token, SOL_TOKEN } from "@/lib/token";
 import useStore from "@/store/store";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useQuery } from "@tanstack/react-query";
@@ -37,13 +37,21 @@ const UserBalanceProvider: FC<PropsWithChildren> = ({ children }) => {
         enabled: Boolean(address), // Only run when there is a valid wallet address
     });
 
-    const { setTokenInfoList } = useStore();
+    const { setHeliusTokenList: setTokenInfoList } = useStore();
     useEffect(() => {
         if (!data) {
             return;
         }
 
-        const tokenWithInfo: TokenWithInfoList = {};
+        const tokens: Token[] = data.result.nativeBalance
+            ? [
+                  {
+                      ...SOL_TOKEN,
+                      balance: data.result.nativeBalance.lamports,
+                      price: data.result.nativeBalance.price_per_sol,
+                  },
+              ]
+            : [];
 
         const items = data.result.items;
         for (let i = 0; i < items.length; i++) {
@@ -51,9 +59,8 @@ const UserBalanceProvider: FC<PropsWithChildren> = ({ children }) => {
             if (item.ownership.frozen || item.interface != "FungibleToken") {
                 continue;
             }
-            console.log(item);
             const tokenInfo = item.token_info;
-            tokenWithInfo[item.id] = {
+            tokens.push({
                 address: item.id,
                 chainId: 101,
                 decimals: tokenInfo.decimals,
@@ -63,9 +70,9 @@ const UserBalanceProvider: FC<PropsWithChildren> = ({ children }) => {
                 tags: ["helius"],
                 price: tokenInfo.price_info?.price_per_token || 0,
                 balance: tokenInfo.balance,
-            };
+            });
         }
-        setTokenInfoList(tokenWithInfo);
+        setTokenInfoList(tokens);
     }, [data, setTokenInfoList]);
 
     return children;

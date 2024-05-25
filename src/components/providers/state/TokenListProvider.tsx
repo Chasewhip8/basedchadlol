@@ -14,12 +14,7 @@ const TokenListProvider: FC<PropsWithChildren> = ({ children }) => {
     const { setTokenList } = useStore();
     useEffect(() => {
         if (data) {
-            const list: TokenList = {};
-            for (let i = 0; i < data.length; i++) {
-                const token = data[i];
-                list[token.address] = token;
-            }
-            setTokenList(list);
+            setTokenList(data);
         }
     }, [data, setTokenList]);
 

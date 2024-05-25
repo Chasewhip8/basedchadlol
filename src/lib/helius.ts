@@ -742,6 +742,10 @@ export namespace DAS {
         limit: number;
         page: number;
         items: GetAssetResponse[];
+        nativeBalance?: {
+            lamports: number;
+            price_per_sol: number;
+        };
     };
 
     export interface GetAssetProofResponse {

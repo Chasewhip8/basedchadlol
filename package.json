@@ -11,6 +11,7 @@
     "dependencies": {
         "@radix-ui/react-dialog": "^1.0.5",
         "@radix-ui/react-label": "^2.0.2",
+        "@radix-ui/react-scroll-area": "^1.0.5",
         "@radix-ui/react-separator": "^1.0.3",
         "@radix-ui/react-slider": "^1.1.2",
         "@radix-ui/react-slot": "^1.0.2",
@@ -20,6 +21,7 @@
         "@solana/wallet-adapter-react-ui": "^0.9.35",
         "@solana/web3.js": "^1.91.8",
         "@tanstack/react-query": "^5.37.1",
+        "@tanstack/react-virtual": "^3.5.0",
         "@types/react-virtualized": "^9.21.30",
         "class-variance-authority": "^0.7.0",
         "clsx": "^2.1.1",
@@ -28,10 +30,9 @@
         "lucide-react": "^0.378.0",
         "next": "14.2.3",
         "next-themes": "^0.3.0",
-        "react": "^18",
+        "react": "18.2.0",
         "react-dom": "^18",
         "react-dropzone": "^14.2.3",
-        "react-virtualized": "^9.22.5",
         "tailwind-merge": "^2.3.0",
         "tailwindcss-animate": "^1.0.7",
         "zustand": "^4.5.2"
@@ -45,5 +46,6 @@
         "postcss": "^8",
         "tailwindcss": "^3.4.1",
         "typescript": "^5.4.5"
-    }
+    },
+    "packageManager": "yarn@1.22.22+sha1.ac34549e6aa8e7ead463a7407e1c7390f61a6610"
 }

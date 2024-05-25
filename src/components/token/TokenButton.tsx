@@ -1,11 +1,10 @@
 import { cn } from "@/lib/utils";
 import { Button } from "../ui/button";
 import React from "react";
-import useStore from "@/store/store";
 import { useToken } from "@/store/hooks";
 import { UNKOWN_TOKEN } from "@/lib/token";
-import Image from "next/image";
-import { ArrowDownNarrowWideIcon, ChevronDownIcon } from "lucide-react";
+import { ChevronDownIcon, FileQuestionIcon } from "lucide-react";
+import TokenIcon from "./TokenIcon";
 
 const TokenButton = React.forwardRef<
     React.ElementRef<typeof Button>,
@@ -20,15 +19,8 @@ const TokenButton = React.forwardRef<
             variant="secondary"
             {...props}
         >
-            <Image
-                src={token.logoURI}
-                alt={`Logo of ${token.symbol}`}
-                width={24}
-                height={24}
-                className="mr-2"
-            />
+            <TokenIcon token={token} className="mr-2" />
             {token.symbol}
-
             <ChevronDownIcon className="w-5 ml-auto" />
         </Button>
     );
