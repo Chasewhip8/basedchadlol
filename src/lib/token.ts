@@ -79,3 +79,25 @@ export const UNKOWN_TOKEN: Token = {
     price: 0,
     balance: 0,
 };
+
+export function convertTokenLamportsToNatural(
+    token?: Token | null,
+    amount?: number | null,
+) {
+    if (!token) {
+        return 0;
+    }
+
+    return (amount && amount / 10 ** token.decimals) || 0;
+}
+
+export function convertTokenNaturalToLamports(
+    token?: Token | null,
+    amount?: string | null,
+) {
+    if (!token || !amount) {
+        return 0;
+    }
+
+    return parseFloat(amount) * 10 ** token.decimals;
+}
