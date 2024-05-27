@@ -24,6 +24,7 @@ import { WalletIcon } from "lucide-react";
 import { convertTokenLamportsToNatural } from "@/lib/token";
 import { Skeleton } from "@/components/ui/skeleton";
 import SwapStatusIndicator from "@/components/SwapStatusIndicator";
+import SwapButton from "@/components/swap/SwapButton";
 
 const Swap: NextPageWithLayout = () => {
     const [
@@ -33,6 +34,7 @@ const Swap: NextPageWithLayout = () => {
         setInputTokensPercentageAmount,
         setInputTokenAmount,
         setOutputToken,
+        addDustInputTokens,
     ] = useStore((state) => [
         state.addInputToken,
         state.removeInputToken,
@@ -40,6 +42,7 @@ const Swap: NextPageWithLayout = () => {
         state.setInputTokensPercentageAmount,
         state.setInputTokenAmount,
         state.setOutputToken,
+        state.addDustInputTokens,
     ]);
 
     const [inputTokens, outputToken] = useStore((state) => [
@@ -66,7 +69,7 @@ const Swap: NextPageWithLayout = () => {
     const totalOutAmount = useMemo<number | null>(() => {
         let total = 0;
         for (const inputToken of inputTokens) {
-            if (inputToken.route) {
+            if (inputToken.status == "ROUTING" && inputToken.route) {
                 total += parseFloat(inputToken.route.jupiterQuote.outAmount);
             }
         }
@@ -108,7 +111,11 @@ const Swap: NextPageWithLayout = () => {
                                     Clear All
                                 </Button>
 
-                                <Button variant="secondary" size="xs">
+                                <Button
+                                    variant="secondary"
+                                    size="xs"
+                                    onClick={addDustInputTokens}
+                                >
                                     Add Dust Tokens
                                 </Button>
                             </div>
@@ -140,67 +147,58 @@ const Swap: NextPageWithLayout = () => {
                     <Separator />
                     <TokenListGuard>
                         <div className="flex flex-col gap-y-3">
-                            {inputTokens.map(
-                                ({
-                                    tokenAddress,
-                                    naturalAmount,
-                                    status,
-                                    route,
-                                }) => {
-                                    const token =
-                                        tokenList && tokenList[tokenAddress];
-                                    return (
-                                        <div
-                                            key={tokenAddress}
-                                            className="flex flex-row gap-x-2 h-11 items-center"
-                                        >
-                                            <TokenButton
-                                                tokenAddress={tokenAddress}
-                                                onClick={() =>
-                                                    setInputTokenListOpen(true)
-                                                }
-                                            />
-                                            <div className="relative w-full h-full">
-                                                <span className="hidden sm:flex absolute left-2.5 top-0 bottom-0 my-auto  flex-row items-center gap-x-1 text-foreground/60 text-xs">
-                                                    <WalletIcon className="w-3 h-3 mr-0.5" />
-                                                    {convertTokenLamportsToNatural(
-                                                        token,
-                                                        token?.balance,
-                                                    )}
-                                                </span>
+                            {inputTokens.map((entry) => {
+                                const { tokenAddress, naturalAmount, errors } =
+                                    entry;
 
-                                                <Input
-                                                    type="number"
-                                                    value={naturalAmount}
-                                                    onChange={(e) =>
-                                                        setInputTokenAmount(
-                                                            tokenAddress,
-                                                            e.target.value,
-                                                        )
-                                                    }
-                                                    className="text-right h-full [-moz-appearance:_textfield] [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none"
-                                                />
-                                            </div>
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                className="h-full w-12 text-card-foreground/80 hover:bg-destructive/90"
-                                                onClick={() =>
-                                                    removeInputToken(
+                                const token =
+                                    tokenList && tokenList[tokenAddress];
+                                return (
+                                    <div
+                                        key={tokenAddress}
+                                        className="flex flex-row gap-x-2 h-11 items-center"
+                                    >
+                                        <TokenButton
+                                            tokenAddress={tokenAddress}
+                                            onClick={() =>
+                                                setInputTokenListOpen(true)
+                                            }
+                                        />
+                                        <div className="relative w-full h-full">
+                                            <span className="hidden sm:flex absolute left-2.5 top-0 bottom-0 my-auto  flex-row items-center gap-x-1 text-foreground/60 text-xs">
+                                                <WalletIcon className="w-3 h-3 mr-0.5" />
+                                                {convertTokenLamportsToNatural(
+                                                    token,
+                                                    token?.balance,
+                                                )}
+                                            </span>
+
+                                            <Input
+                                                type="number"
+                                                value={naturalAmount}
+                                                onChange={(e) =>
+                                                    setInputTokenAmount(
                                                         tokenAddress,
+                                                        e.target.value,
                                                     )
                                                 }
-                                            >
-                                                <XIcon className="w-5" />
-                                            </Button>
-                                            <SwapStatusIndicator
-                                                status={status}
-                                                hasRoute={Boolean(route)}
+                                                className="text-right h-full [-moz-appearance:_textfield] [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none"
                                             />
                                         </div>
-                                    );
-                                },
-                            )}
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-full w-12 text-card-foreground/80 hover:bg-destructive/90"
+                                            onClick={() =>
+                                                removeInputToken(tokenAddress)
+                                            }
+                                        >
+                                            <XIcon className="w-5" />
+                                        </Button>
+                                        <SwapStatusIndicator entry={entry} />
+                                    </div>
+                                );
+                            })}
 
                             <TokenListDialog
                                 selectedTokens={inputTokenAddresses}
@@ -264,7 +262,7 @@ const Swap: NextPageWithLayout = () => {
                     </TokenListGuard>
                 </Card>
                 <Card className="p-3 mt-5">
-                    <Button className="w-full">Swap</Button>
+                    <SwapButton />
                 </Card>
             </div>
         </div>

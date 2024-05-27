@@ -766,6 +766,8 @@ export namespace DAS {
     // DisplayOptions
 
     export type DisplayOptions = {
+        showFungible?: boolean;
+        showNativeBalance?: boolean;
         showUnverifiedCollections?: boolean;
         showCollectionMetadata?: boolean;
         showGrandTotal?: boolean;

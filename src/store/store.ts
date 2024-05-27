@@ -1,4 +1,9 @@
-import { MIN_JUPITER_ROUTE_REFETCH_INTERVAL, TOKEN_MINT } from "@/lib/config";
+import {
+    MIN_JUPITER_ROUTE_REFETCH_INTERVAL,
+    RESERVED_FEE_ACCOUNTS,
+    TOKEN_DUST_MAX_VALUE,
+    TOKEN_MINT,
+} from "@/lib/config";
 import {
     BSC_TOKEN,
     SOL_TOKEN,
@@ -9,16 +14,18 @@ import {
     convertTokenNaturalToLamports,
     isStrictToken,
 } from "@/lib/token";
-import { StateCreator, create } from "zustand";
+import { StateCreator } from "zustand";
+import { createWithEqualityFn } from "zustand/traditional";
 import { persist, subscribeWithSelector } from "zustand/middleware";
 import { shallow } from "zustand/shallow";
-import { produce } from "immer";
+import { original, produce } from "immer";
 import { JUPITER_API } from "@/lib/jupiter";
 import { QuoteResponse } from "@jup-ag/api";
 import {
     selectiveArrayShallow,
     selectiveShallow,
 } from "@/lib/selectiveShallow";
+import { Transaction, TransactionSignature } from "@solana/web3.js";
 
 export interface CacheSlice {
     tokenList: Token[] | null;
@@ -127,26 +134,47 @@ const createGlobalSettingsSlice: StateCreator<Store, [], [], GlobalSettings> = (
         })),
 });
 
-export type SwapStatus =
+type RoutingSwapStatus = "ROUTING";
+
+type SwappingSwapStatus = "PENDING_SIGNATURE" | "SIGNING" | "CONFIRMING";
+
+export type SwapStatus = RoutingSwapStatus | SwappingSwapStatus;
+
+export type SwapErrors =
     | "NO_ROUTE"
     | "JUPITER_UNKOWN"
     | "SAME_INPUT_OUTPUT"
     | "AMOUNT_TOO_SMALL";
 
-export interface InputTokenEntry {
+type InputTokenEntryBase = {
     tokenAddress: string;
     naturalAmount: string;
     amount: number; // Optimization to prevent the need to fetch on tokenList change. Duplicate state but allowed.
+    errors?: SwapErrors[];
+};
+
+export type RouteInputTokenEntry = InputTokenEntryBase & {
     route?: {
         timeStamp: number;
         jupiterQuote: QuoteResponse;
     };
-    status?: SwapStatus[];
-}
+    status: RoutingSwapStatus;
+};
+
+export type SwapInputTokenEntry = InputTokenEntryBase & {
+    swap?: {
+        timeStamp: number;
+        transaction: Transaction;
+    };
+    status: SwappingSwapStatus;
+};
+
+export type InputTokenEntry = RouteInputTokenEntry | SwapInputTokenEntry;
 
 export interface SwapSlice {
     inputTokens: InputTokenEntry[];
     addInputToken: (newToken: string) => void;
+    addDustInputTokens: () => void;
     setInputTokensPercentageAmount: (percentage: number) => void;
     removeInputToken: (token: string) => void;
     clearInputTokens: () => void;
@@ -162,17 +190,32 @@ export interface SwapSlice {
     ) => void;
     addSwapError: (
         inputToken: string,
-        errors: NonNullable<InputTokenEntry["status"]>,
+        errors: NonNullable<InputTokenEntry["errors"]>,
     ) => void;
     clearSwapErrorsAndRoute: (inputToken: string) => void;
+    setSwapTransaction: (
+        inputToken: string,
+        transaction: Transaction,
+        timeStamp: number,
+    ) => void;
+    setSwapStatus: (inputToken: string, newStatus: SwappingSwapStatus) => void;
 }
 
 const createSwapSlice: StateCreator<Store, [], [], SwapSlice> = (set) => ({
     inputTokens: [
-        { tokenAddress: WRAPPED_SOL_MINT, naturalAmount: "0", amount: 0 },
+        {
+            tokenAddress: WRAPPED_SOL_MINT,
+            naturalAmount: "0",
+            amount: 0,
+            status: "ROUTING",
+        },
     ],
     addInputToken: (newToken: string) =>
         set((state) => {
+            if (state.inputTokens.find((t) => t.tokenAddress == newToken)) {
+                return state;
+            }
+
             const maybeToken =
                 state.cachedFilteredTokenList &&
                 state.cachedFilteredTokenList[newToken];
@@ -187,8 +230,56 @@ const createSwapSlice: StateCreator<Store, [], [], SwapSlice> = (set) => ({
                             balance,
                         ).toString(),
                         amount: balance,
+                        status: "ROUTING",
                     },
                 ],
+            };
+        }),
+    addDustInputTokens: () =>
+        set((state) => {
+            const tokenList = state.cachedFilteredTokenList;
+            if (!tokenList) {
+                return state;
+            }
+
+            const newTokens: RouteInputTokenEntry[] = [];
+            for (const tokenAddress in tokenList) {
+                if (!tokenList.hasOwnProperty(tokenAddress)) {
+                    continue;
+                }
+
+                const token = tokenList[tokenAddress];
+                if (!token.balance || !token.price) {
+                    continue;
+                }
+
+                if (
+                    state.inputTokens.find(
+                        (t) => t.tokenAddress == tokenAddress,
+                    )
+                ) {
+                    continue;
+                }
+
+                if (
+                    convertTokenLamportsToNatural(token, token.balance) *
+                        token.price <=
+                    TOKEN_DUST_MAX_VALUE
+                ) {
+                    newTokens.push({
+                        tokenAddress: tokenAddress,
+                        naturalAmount: convertTokenLamportsToNatural(
+                            token,
+                            token.balance,
+                        ).toString(),
+                        amount: token.balance,
+                        status: "ROUTING",
+                    });
+                }
+            }
+
+            return {
+                inputTokens: [...state.inputTokens, ...newTokens],
             };
         }),
     setInputTokenAmount: (tokenAddress: string, naturalAmount: string) =>
@@ -256,7 +347,11 @@ const createSwapSlice: StateCreator<Store, [], [], SwapSlice> = (set) => ({
                 const inputTokenEntry = state.inputTokens.find(
                     (t) => t.tokenAddress === inputToken,
                 );
-                if (!inputTokenEntry || inputTokenEntry.amount != amount) {
+                if (
+                    !inputTokenEntry ||
+                    inputTokenEntry.status != "ROUTING" ||
+                    inputTokenEntry.amount != amount
+                ) {
                     return;
                 }
 
@@ -272,7 +367,7 @@ const createSwapSlice: StateCreator<Store, [], [], SwapSlice> = (set) => ({
                     timeStamp: timeStamp,
                     jupiterQuote: jupiterQuote,
                 };
-                inputTokenEntry.status = undefined;
+                inputTokenEntry.errors = undefined;
             }),
         ),
     removeInputToken: (token: string) =>
@@ -291,7 +386,18 @@ const createSwapSlice: StateCreator<Store, [], [], SwapSlice> = (set) => ({
                 }
 
                 for (const inputToken of state.inputTokens) {
-                    inputToken.route = undefined;
+                    if (inputToken.status != "ROUTING") {
+                        console.warn(
+                            "store::swap::setOutputToken::WARN_INPUT_TOKEN_NOT_ROUTING",
+                        );
+                        return;
+                    }
+                }
+
+                for (const inputToken of state.inputTokens) {
+                    if (inputToken.status == "ROUTING") {
+                        inputToken.route = undefined;
+                    }
                 }
 
                 state.outputToken = newToken;
@@ -307,12 +413,17 @@ const createSwapSlice: StateCreator<Store, [], [], SwapSlice> = (set) => ({
                     return;
                 }
 
-                if (inputTokenEntry.status) {
-                    inputTokenEntry.status.push(...errors);
+                if (inputTokenEntry.errors) {
+                    inputTokenEntry.errors.push(...errors);
                 } else {
-                    inputTokenEntry.status = errors;
+                    inputTokenEntry.errors = errors;
                 }
-                inputTokenEntry.route = undefined;
+
+                if (inputTokenEntry.status == "ROUTING") {
+                    inputTokenEntry.route = undefined;
+                } else {
+                    inputTokenEntry.swap = undefined;
+                }
             }),
         ),
     clearSwapErrorsAndRoute: (inputToken) =>
@@ -325,15 +436,56 @@ const createSwapSlice: StateCreator<Store, [], [], SwapSlice> = (set) => ({
                     return;
                 }
 
-                inputTokenEntry.status = undefined;
+                inputTokenEntry.errors = undefined;
+
+                if (inputTokenEntry.status == "ROUTING") {
+                    inputTokenEntry.route = undefined;
+                } else {
+                    inputTokenEntry.swap = undefined;
+                }
+            }),
+        ),
+    setSwapTransaction: (inputToken, transaction, timeStamp) =>
+        set(
+            produce((state: Store) => {
+                const inputTokenEntry = state.inputTokens.find(
+                    (t) => t.tokenAddress === inputToken,
+                );
+                if (!inputTokenEntry || inputTokenEntry.status != "ROUTING") {
+                    return;
+                }
+
                 inputTokenEntry.route = undefined;
+
+                // WTF: This is a hack to get around the fact that TypeScript is not recognizing that inputTokenEntry is a SwapInputTokenEntry
+                const swapInputTokenEntry =
+                    inputTokenEntry as any as SwapInputTokenEntry;
+
+                swapInputTokenEntry.status = "PENDING_SIGNATURE";
+                swapInputTokenEntry.swap = {
+                    timeStamp: timeStamp,
+                    transaction: transaction,
+                };
+            }),
+        ),
+    setSwapStatus: (inputToken, status) =>
+        set(
+            produce((state: Store) => {
+                const inputTokenEntry = state.inputTokens.find(
+                    (t) => t.tokenAddress === inputToken,
+                );
+                if (!inputTokenEntry) {
+                    return;
+                }
+
+                inputTokenEntry.status = status;
             }),
         ),
 });
 
 type Store = CacheSlice & GlobalSettings & SwapSlice;
 
-const useStore = create<
+const useStore = createWithEqualityFn<
     Store,
     [
         ["zustand/subscribeWithSelector", never],
@@ -356,6 +508,7 @@ const useStore = create<
             },
         ),
     ),
+    shallow,
 );
 
 // Subscribers
@@ -381,6 +534,10 @@ useStore.subscribe(
         const state = useStore.getState();
 
         for (const inputTokenEntry of updatedInputTokens) {
+            if (inputTokenEntry.status != "ROUTING") {
+                continue;
+            }
+
             if (inputTokenEntry.amount <= 0) {
                 state.clearSwapErrorsAndRoute(inputTokenEntry.tokenAddress);
                 continue;
@@ -413,6 +570,7 @@ useStore.subscribe(
                 inputMint: inputTokenEntry.tokenAddress,
                 outputMint: updatedOutputToken,
                 amount: inputTokenEntry.amount,
+                maxAccounts: 64 - RESERVED_FEE_ACCOUNTS,
             })
                 .then((quote) => {
                     state.setSwapRoute(
@@ -451,7 +609,11 @@ useStore.subscribe(
     {
         equalityFn: (a, b) =>
             a[1] === b[1] &&
-            selectiveArrayShallow(a[0], b[0], { route: true, status: true }),
+            selectiveArrayShallow(a[0], b[0], {
+                errors: true,
+                route: true,
+                swap: true,
+            }),
     },
 );
 

@@ -5,17 +5,16 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { SwapStatus } from "@/store/store";
+import { InputTokenEntry, SwapErrors } from "@/store/store";
 import { cn } from "@/lib/utils";
 import { Separator } from "./ui/separator";
 
 interface SwapStatusProps {
-    status?: SwapStatus[];
-    hasRoute: boolean;
+    entry: InputTokenEntry;
 }
 
-function getHumanReadableError(status: SwapStatus) {
-    switch (status) {
+function getHumanReadableError(error: SwapErrors) {
+    switch (error) {
         case "AMOUNT_TOO_SMALL":
             return "Swap amount too small";
         case "JUPITER_UNKOWN":
@@ -27,7 +26,10 @@ function getHumanReadableError(status: SwapStatus) {
     }
 }
 
-const SwapStatusIndicator: FC<SwapStatusProps> = ({ status, hasRoute }) => {
+const SwapStatusIndicator: FC<SwapStatusProps> = ({ entry }) => {
+    const { errors } = entry;
+    const hasRoute = entry.status == "ROUTING" && entry.route;
+
     return (
         <TooltipProvider>
             <Tooltip>
@@ -36,7 +38,7 @@ const SwapStatusIndicator: FC<SwapStatusProps> = ({ status, hasRoute }) => {
                         className={cn(
                             "w-2.5 h-2.5 rounded-full bg-green-400 flex-shrink-0",
                             !hasRoute && "bg-gray-400",
-                            status?.length && "bg-yellow-400",
+                            errors?.length && "bg-yellow-400",
                         )}
                     />
                 </TooltipTrigger>
@@ -52,21 +54,21 @@ const SwapStatusIndicator: FC<SwapStatusProps> = ({ status, hasRoute }) => {
                         </p>
                     )}
 
-                    {status && (
+                    {errors && (
                         <>
                             <p className="font-semibold">Swap excluded</p>
                             <Separator />
                             <ul>
-                                {status.map((status) => (
-                                    <li key={status}>
-                                        - {getHumanReadableError(status)}
+                                {errors.map((error) => (
+                                    <li key={error}>
+                                        - {getHumanReadableError(error)}
                                     </li>
                                 ))}
                             </ul>
                         </>
                     )}
 
-                    {!hasRoute && !status?.length && (
+                    {!hasRoute && !errors?.length && (
                         <p>
                             Enter an amount to include this entry in the swap.
                         </p>

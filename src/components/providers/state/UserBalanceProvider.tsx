@@ -1,5 +1,6 @@
-import { CLUSTER_URL } from "@/lib/config";
-import { DAS } from "@/lib/helius";
+import { CLUSTER_URL, SOL_LAMORTS_RESERVED } from "@/lib/config";
+import { DAS } from "@/lib/helius/types";
+import { getUserAssets } from "@/lib/helius/api";
 import { Token, SOL_TOKEN } from "@/lib/token";
 import useStore from "@/store/store";
 import { useWallet } from "@solana/wallet-adapter-react";
@@ -12,28 +13,7 @@ const UserBalanceProvider: FC<PropsWithChildren> = ({ children }) => {
 
     const { data } = useQuery<{ result: DAS.GetAssetResponseList }>({
         queryKey: ["helius-user-balances", address],
-        queryFn: () =>
-            fetch(CLUSTER_URL, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    jsonrpc: "2.0",
-                    id: "1",
-                    method: "getAssetsByOwner",
-                    params: {
-                        ownerAddress: address,
-                        page: 1, // Starts at 1
-                        limit: 1000,
-                        displayOptions: {
-                            showFungible: true,
-                            showNativeBalance: true,
-                        },
-                    },
-                }),
-                // @ts-ignore
-            }).then((res) => res.json()),
+        queryFn: () => getUserAssets(address as string),
         enabled: Boolean(address), // Only run when there is a valid wallet address
     });
 
@@ -47,7 +27,11 @@ const UserBalanceProvider: FC<PropsWithChildren> = ({ children }) => {
             ? [
                   {
                       ...SOL_TOKEN,
-                      balance: data.result.nativeBalance.lamports,
+                      balance: Math.max(
+                          0,
+                          data.result.nativeBalance.lamports -
+                              SOL_LAMORTS_RESERVED,
+                      ),
                       price: data.result.nativeBalance.price_per_sol,
                   },
               ]
