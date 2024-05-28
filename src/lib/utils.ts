@@ -14,3 +14,8 @@ export function objectKeyCount(obj: Object) {
     }
     return count;
 }
+
+let UNIQUE_ID = 1;
+export function getUniqueId() {
+    return UNIQUE_ID++;
+}

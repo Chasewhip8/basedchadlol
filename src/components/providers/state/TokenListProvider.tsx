@@ -1,5 +1,5 @@
 import Loading from "@/components/Loading";
-import { Token, TokenList } from "@/lib/token";
+import { Token } from "@/lib/token";
 import useStore from "@/store/store";
 import { useQuery } from "@tanstack/react-query";
 import { FC, PropsWithChildren, useEffect } from "react";

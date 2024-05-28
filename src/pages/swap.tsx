@@ -69,7 +69,7 @@ const Swap: NextPageWithLayout = () => {
     const totalOutAmount = useMemo<number | null>(() => {
         let total = 0;
         for (const inputToken of inputTokens) {
-            if (inputToken.status == "ROUTING" && inputToken.route) {
+            if (inputToken.route?.jupiterQuote) {
                 total += parseFloat(inputToken.route.jupiterQuote.outAmount);
             }
         }
@@ -120,7 +120,7 @@ const Swap: NextPageWithLayout = () => {
                                 </Button>
                             </div>
 
-                            <div className="hidden sm:block w-0.5 h-4 mx-2 rounded-md bg-border" />
+                            <div className="hidden sm:block w-0.5 h-4 mx-2 my-auto rounded-md bg-border" />
 
                             <div className="flex flex-row gap-1">
                                 <Button
@@ -148,8 +148,7 @@ const Swap: NextPageWithLayout = () => {
                     <TokenListGuard>
                         <div className="flex flex-col gap-y-3">
                             {inputTokens.map((entry) => {
-                                const { tokenAddress, naturalAmount, errors } =
-                                    entry;
+                                const { tokenAddress, naturalAmount } = entry;
 
                                 const token =
                                     tokenList && tokenList[tokenAddress];
@@ -263,6 +262,12 @@ const Swap: NextPageWithLayout = () => {
                 </Card>
                 <Card className="p-3 mt-5">
                     <SwapButton />
+                </Card>
+
+                <Card className="p-6 mt-10 flex flex-col gap-y-3">
+                    <span className="m-auto font-medium text-foreground/80">
+                        No pending swaps
+                    </span>
                 </Card>
             </div>
         </div>

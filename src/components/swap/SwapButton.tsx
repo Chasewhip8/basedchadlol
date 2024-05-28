@@ -12,12 +12,8 @@ const SwapButton: FC = () => {
 
     const isDiabled = validInputTokenEntries.length == 0;
 
-    async function swap() {
-        if (isDiabled) return;
-    }
-
     return (
-        <AsyncButton onClick={swap} disabled={isDiabled} className="w-full">
+        <AsyncButton disabled={isDiabled} className="w-full">
             Swap
         </AsyncButton>
     );

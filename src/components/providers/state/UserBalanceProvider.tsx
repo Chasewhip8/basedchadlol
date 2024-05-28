@@ -19,7 +19,7 @@ const UserBalanceProvider: FC<PropsWithChildren> = ({ children }) => {
 
     const { setHeliusTokenList: setTokenInfoList } = useStore();
     useEffect(() => {
-        if (!data) {
+        if (!data?.result) {
             return;
         }
 
