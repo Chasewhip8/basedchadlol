@@ -2,8 +2,10 @@ import {
     AddressLookupTableAccount,
     PublicKey,
     Transaction,
+    TransactionSignature,
+    VersionedTransaction,
 } from "@solana/web3.js";
-import { CLUSTER_URL } from "../config";
+import { CLUSTER_URL, HELIUS_MAX_RETIRES } from "../config";
 import { DAS, PriorityLevel } from "./types";
 import bs58 from "bs58";
 import { CONNECTION } from "../solana";
@@ -80,4 +82,79 @@ export async function getAddressLookupTableAccounts(
 
         return acc;
     }, new Array<AddressLookupTableAccount>());
+}
+
+async function pollTransactionConfirmation(
+    txtSig: TransactionSignature,
+): Promise<TransactionSignature> {
+    // 15 second timeout
+    const timeout = 15000;
+    // 5 second retry interval
+    const interval = 5000;
+    let elapsed = 0;
+
+    return new Promise<TransactionSignature>((resolve, reject) => {
+        const intervalId = setInterval(async () => {
+            elapsed += interval;
+
+            if (elapsed >= timeout) {
+                clearInterval(intervalId);
+                reject(
+                    new Error(`Transaction ${txtSig}'s confirmation timed out`),
+                );
+            }
+
+            const status = await CONNECTION.getSignatureStatus(txtSig);
+
+            if (status?.value?.confirmationStatus === "confirmed") {
+                clearInterval(intervalId);
+                resolve(txtSig);
+            }
+        }, interval);
+    });
+}
+
+export async function sendHeliusTransaction(
+    transactions: { tx: VersionedTransaction; txId: string }[],
+    transactionStatusCallback: (txId: string, confirmed: boolean) => void,
+) {
+    await Promise.all(
+        transactions.map(async ({ tx, txId }) => {
+            try {
+                let retryCount = 0;
+                let txtSig: string;
+
+                // Send the transaction with configurable retries and preflight checks
+                while (retryCount <= HELIUS_MAX_RETIRES) {
+                    try {
+                        txtSig = await CONNECTION.sendRawTransaction(
+                            tx.serialize(),
+                            {
+                                skipPreflight: true,
+                                maxRetries: 0,
+                            },
+                        );
+
+                        await pollTransactionConfirmation(txtSig);
+                        transactionStatusCallback(txId, true);
+                        return;
+                    } catch (error) {
+                        if (retryCount === HELIUS_MAX_RETIRES) {
+                            transactionStatusCallback(txId, false);
+                            console.error(
+                                `Error sending transaction: ${error}`,
+                            );
+                            return;
+                        }
+
+                        retryCount++;
+                    }
+                }
+            } catch (error) {
+                transactionStatusCallback(txId, false);
+                console.error(`Error sending transaction: ${error}`);
+                return;
+            }
+        }),
+    );
 }

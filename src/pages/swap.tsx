@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { XIcon } from "lucide-react";
+import { ArrowRightIcon, MoveRightIcon, XIcon } from "lucide-react";
 import {
     InfoTooltipTrigger,
     Tooltip,
@@ -25,6 +25,9 @@ import { convertTokenLamportsToNatural } from "@/lib/token";
 import { Skeleton } from "@/components/ui/skeleton";
 import SwapStatusIndicator from "@/components/SwapStatusIndicator";
 import SwapButton from "@/components/swap/SwapButton";
+import TokenIcon from "@/components/token/TokenIcon";
+import SwapIntentIndicator from "@/components/SwapIntentIndicator";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const Swap: NextPageWithLayout = () => {
     const [
@@ -35,6 +38,7 @@ const Swap: NextPageWithLayout = () => {
         setInputTokenAmount,
         setOutputToken,
         addDustInputTokens,
+        swapIntents,
     ] = useStore((state) => [
         state.addInputToken,
         state.removeInputToken,
@@ -43,6 +47,7 @@ const Swap: NextPageWithLayout = () => {
         state.setInputTokenAmount,
         state.setOutputToken,
         state.addDustInputTokens,
+        state.swapIntents,
     ]);
 
     const [inputTokens, outputToken] = useStore((state) => [
@@ -88,7 +93,7 @@ const Swap: NextPageWithLayout = () => {
                     RPCs. Learn about how fees are used to sustain the based
                     protocol ecosystem{" "}
                     <Button className="p-0 h-min text-md m-0" variant="link">
-                        here
+                        here (coming soon)
                     </Button>
                     .
                 </p>
@@ -260,15 +265,91 @@ const Swap: NextPageWithLayout = () => {
                         </div>
                     </TokenListGuard>
                 </Card>
-                <Card className="p-3 mt-5">
+                <Card className="p-3 mt-3">
                     <SwapButton />
                 </Card>
+                <div className="flex flex-col gap-y-2 mt-10">
+                    <Label className="text-lg">Swap History</Label>
 
-                <Card className="p-6 mt-10 flex flex-col gap-y-3">
-                    <span className="m-auto font-medium text-foreground/80">
-                        No pending swaps
-                    </span>
-                </Card>
+                    <Card className="p-3 flex">
+                        {swapIntents.length > 0 ? (
+                            <ScrollArea className="max-h-[300px]  w-full">
+                                <div className="flex flex-col gap-y-3 w-full">
+                                    {swapIntents.map((intent) => {
+                                        const token =
+                                            tokenList &&
+                                            tokenList[intent.outputToken];
+
+                                        return (
+                                            <Card
+                                                key={intent.intentId}
+                                                className="bg-secondary text-secondary-foreground p-4 flex flex-row gap-x-2 items-center "
+                                            >
+                                                <div className="flex flex-row gap-x-3">
+                                                    <div className="flex flex-row mr-3">
+                                                        {intent.transactions
+                                                            .slice(0, 7)
+                                                            .map(
+                                                                (
+                                                                    transactionInfo,
+                                                                ) => {
+                                                                    const inputToken =
+                                                                        tokenList &&
+                                                                        tokenList[
+                                                                            transactionInfo
+                                                                                .inputTokenAddress
+                                                                        ];
+                                                                    return (
+                                                                        <span
+                                                                            className="flex overflow-x-visible w-3"
+                                                                            key={
+                                                                                transactionInfo.inputTokenAddress
+                                                                            }
+                                                                        >
+                                                                            {inputToken && (
+                                                                                <TokenIcon
+                                                                                    token={
+                                                                                        inputToken
+                                                                                    }
+                                                                                />
+                                                                            )}
+                                                                        </span>
+                                                                    );
+                                                                },
+                                                            )}
+                                                    </div>
+
+                                                    <MoveRightIcon className="w-5 text-foreground/80" />
+
+                                                    {token && (
+                                                        <TokenIcon
+                                                            token={token}
+                                                        />
+                                                    )}
+                                                </div>
+
+                                                <span className="font-medium text-foreground/80 truncate text-ellipsis whitespace-nowrap">
+                                                    {convertTokenLamportsToNatural(
+                                                        token,
+                                                        intent.outAmount,
+                                                    )}
+                                                </span>
+
+                                                <SwapIntentIndicator
+                                                    intent={intent}
+                                                />
+                                            </Card>
+                                        );
+                                    })}
+                                </div>
+                            </ScrollArea>
+                        ) : (
+                            <span className="m-auto font-medium text-foreground/80">
+                                No pending swaps
+                            </span>
+                        )}
+                    </Card>
+                </div>
             </div>
         </div>
     );

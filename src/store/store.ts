@@ -46,6 +46,7 @@ import base58 from "bs58";
 import {
     getPriorityFeeEstimate,
     getAddressLookupTableAccounts,
+    sendHeliusTransaction,
 } from "@/lib/helius/api";
 import { CONNECTION } from "@/lib/solana";
 import { WalletContextState } from "@solana/wallet-adapter-react";
@@ -206,13 +207,14 @@ export type SwapTransactionInfo = {
     inAmount: number;
     swapInstructions?: SwapInstructionsResponse;
     status: TransactionStatus;
-    transactionHash?: string;
+    transactionSignature?: string;
 };
 
 type SwapIntentStatus =
     | "SWAPPING"
     | "PROCESSING"
     | "SENT"
+    | "COMPLETED"
     | "TRANSACTIONS_CREATE_FAILED";
 
 export type SwapIntent = {
@@ -265,6 +267,11 @@ export interface SwapSlice {
     setSwapTransactionIntentStatus: (
         intentId: number,
         inputToken: string,
+        status: TransactionStatus,
+    ) => void;
+    setSwapTransactionIntentStatusTxId: (
+        intentId: number,
+        txId: string,
         status: TransactionStatus,
     ) => void;
     setSwapIntentStatus: (intentId: number, status: SwapIntentStatus) => void;
@@ -616,6 +623,10 @@ const createSwapSlice: StateCreator<Store, [], [], SwapSlice> = (set, get) => ({
                     continue;
                 }
 
+                outAmount += Number(
+                    inputTokenEntry.route.jupiterQuote.outAmount,
+                );
+
                 transactions.push({
                     inputTokenAddress: inputTokenEntry.tokenAddress,
                     inAmount: inputTokenEntry.amount,
@@ -688,6 +699,30 @@ const createSwapSlice: StateCreator<Store, [], [], SwapSlice> = (set, get) => ({
                 transactionInfo.status = status;
             }),
         ),
+    setSwapTransactionIntentStatusTxId: (
+        intentId: number,
+        txId: string,
+        status: TransactionStatus,
+    ) =>
+        set(
+            produce((state: Store) => {
+                const swapIntent = state.swapIntents.find(
+                    (t) => t.intentId === intentId,
+                );
+                if (!swapIntent) {
+                    return;
+                }
+
+                const transactionInfo = swapIntent.transactions.find(
+                    (t) => t.transactionSignature === txId,
+                );
+                if (!transactionInfo) {
+                    return;
+                }
+
+                transactionInfo.status = status;
+            }),
+        ),
     setSwapIntentStatus: (intentId: number, status: SwapIntentStatus) =>
         set(
             produce((state: Store) => {
@@ -714,7 +749,18 @@ const createSwapSlice: StateCreator<Store, [], [], SwapSlice> = (set, get) => ({
                     return;
                 }
 
-                swapIntent.status = status;
+                if (signatures.length != swapIntent.transactions.length) {
+                    console.warn(
+                        "store::swap::setSwapTransactionIntentSignatures::WARN_SIGNATURES_LENGTH_MISMATCH",
+                    );
+                    return;
+                }
+
+                for (let i = 0; i < signatures.length; i++) {
+                    swapIntent.transactions[i].transactionSignature =
+                        signatures[i];
+                }
+                swapIntent.status = "SENT";
             }),
         ),
     processSwapIntents: () => {
@@ -846,7 +892,29 @@ const createSwapSlice: StateCreator<Store, [], [], SwapSlice> = (set, get) => ({
                     return;
                 }
 
-                const signatures = wallet.signAllTransactions(transactions);
+                const signedTransactions = (
+                    await wallet.signAllTransactions(transactions)
+                ).map((tx) => ({
+                    tx: tx,
+                    txId: base58.encode(tx.signatures[0]),
+                }));
+
+                get().setSwapTransactionIntentSignatures(
+                    swapIntent.intentId,
+                    signedTransactions.map((t) => t.txId),
+                );
+
+                await sendHeliusTransaction(
+                    signedTransactions,
+                    (txId, confirmed) =>
+                        get().setSwapTransactionIntentStatusTxId(
+                            swapIntent.intentId,
+                            txId,
+                            confirmed ? "CONFIRMED" : "FAILED",
+                        ),
+                );
+
+                get().setSwapIntentStatus(swapIntent.intentId, "COMPLETED");
             })().catch((error) => {
                 console.warn(error);
 
@@ -925,6 +993,13 @@ useStore.subscribe(
             selectiveArrayShallow(a[0], b[0], {
                 status: true,
             }),
+    },
+);
+
+useStore.subscribe(
+    (state) => [state.swapIntents],
+    (state) => {
+        console.log(state);
     },
 );
 

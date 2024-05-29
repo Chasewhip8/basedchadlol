@@ -30,6 +30,7 @@ const NavBar: FC = () => {
 
             <div className="ml-auto flex flex-row gap-x-2 items-center">
                 <Button
+                    disabled
                     variant="outline"
                     size="icon"
                     className="rounded-full h-12 w-12 flex-shrink-0"
