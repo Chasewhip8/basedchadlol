@@ -9,27 +9,40 @@
         "lint": "next lint"
     },
     "dependencies": {
+        "@jup-ag/api": "^6.0.23",
         "@radix-ui/react-dialog": "^1.0.5",
         "@radix-ui/react-label": "^2.0.2",
+        "@radix-ui/react-scroll-area": "^1.0.5",
+        "@radix-ui/react-separator": "^1.0.3",
         "@radix-ui/react-slider": "^1.1.2",
         "@radix-ui/react-slot": "^1.0.2",
+        "@radix-ui/react-tooltip": "^1.0.7",
         "@solana/wallet-adapter-base": "^0.9.23",
         "@solana/wallet-adapter-react": "^0.15.35",
         "@solana/wallet-adapter-react-ui": "^0.9.35",
         "@solana/web3.js": "^1.91.8",
+        "@tanstack/react-query": "^5.37.1",
+        "@tanstack/react-virtual": "^3.5.0",
+        "@types/react-virtualized": "^9.21.30",
+        "async-mutex": "^0.5.0",
+        "bs58": "^5.0.0",
         "class-variance-authority": "^0.7.0",
         "clsx": "^2.1.1",
+        "immer": "^10.1.1",
         "lucide": "^0.378.0",
         "lucide-react": "^0.378.0",
         "next": "14.2.3",
         "next-themes": "^0.3.0",
-        "react": "^18",
+        "react-share": "^5.1.0",
+        "react": "18.2.0",
         "react-dom": "^18",
         "react-dropzone": "^14.2.3",
-        "react-share": "^5.1.0",
         "tailwind-merge": "^2.3.0",
         "tailwindcss-animate": "^1.0.7",
-        "zustand": "^4.5.2",
+        "zustand": "^4.5.2"
+    },
+    "devDependencies": {
+        "@types/node": "^20.12.12",
         "@types/react": "^18",
         "@types/react-dom": "^18",
         "eslint": "^8",
@@ -37,5 +50,6 @@
         "postcss": "^8",
         "tailwindcss": "^3.4.1",
         "typescript": "^5.4.5"
-    }
+    },
+    "packageManager": "yarn@1.22.22+sha1.ac34549e6aa8e7ead463a7407e1c7390f61a6610"
 }

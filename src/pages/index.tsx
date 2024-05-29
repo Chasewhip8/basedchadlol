@@ -8,9 +8,8 @@ import {
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import Image from "next/image";
-import { ReactElement, useEffect, useState } from "react";
+import { ReactElement, useState } from "react";
 import Link from "next/link";
-import { TwitterShareButton } from "react-share";
 import DefaultLayout from "@/components/DefaultLayout";
 import { NextPageWithLayout } from "./_app";
 import { TOKEN_MINT } from "@/lib/config";
@@ -18,14 +17,8 @@ import { TOKEN_MINT } from "@/lib/config";
 const Home: NextPageWithLayout = () => {
     const [copied, setCopied] = useState(false);
 
-    // Fix hydration error in react-share
-    const [mounted, setMounted] = useState(false);
-    useEffect(() => {
-        setMounted(true);
-    }, []);
-
     return (
-        <div className="flex flex-col gap-y-12 mt-20 mx-2 items-center">
+        <div className="flex flex-col gap-y-12 mt-20 items-center">
             <div className="fixed bottom-0 -z-10 overflow-hidden w-max">
                 <Image
                     className="w-auto"

@@ -6,8 +6,11 @@ import { useRouter } from "next/router";
 
 const NavButton = React.forwardRef<
     React.ElementRef<typeof Link>,
-    React.ComponentPropsWithoutRef<typeof Link> & { disabled?: boolean }
->(({ className, href, children, disabled, ...props }, ref) => {
+    React.ComponentPropsWithoutRef<typeof Link> & {
+        disabled?: boolean;
+        external?: boolean;
+    }
+>(({ className, href, children, disabled, external, ...props }, ref) => {
     const { asPath } = useRouter();
 
     const Inner: FC = () => (
@@ -15,19 +18,25 @@ const NavButton = React.forwardRef<
             disabled={disabled}
             variant="ghost"
             className={cn(
-                "text-lg font-semibold",
-                asPath == href && "gradient-text",
+                "text-lg font-semibold flex flex-row gap-x-2",
                 className,
             )}
         >
-            {children}
+            <span className={cn(asPath == href && "gradient-text")}>
+                {children}
+            </span>
         </Button>
     );
 
     return disabled ? (
         <Inner />
     ) : (
-        <Link ref={ref} href={href} {...props}>
+        <Link
+            ref={ref}
+            href={href}
+            {...(external && { target: "_blank" })}
+            {...props}
+        >
             <Inner />
         </Link>
     );

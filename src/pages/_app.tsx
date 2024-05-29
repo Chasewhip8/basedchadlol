@@ -2,11 +2,12 @@ import { useEffect, useState, type ReactElement, type ReactNode } from "react";
 import type { NextPage } from "next";
 import type { AppProps } from "next/app";
 
-import SolanaProvider from "@/components/providers/SolanaProvider";
+import SolanaWalletProvider from "@/components/providers/SolanaWalletProvider";
 import { ThemeProvider } from "next-themes";
 
 import "@solana/wallet-adapter-react-ui/styles.css";
 import "@/styles/globals.css";
+import QueryProvider from "@/components/providers/QueryProvider";
 
 export type NextPageWithLayout<P = {}, IP = P> = NextPage<P, IP> & {
     getLayout?: (page: ReactElement) => ReactNode;
@@ -29,9 +30,11 @@ export default function MyApp({ Component, pageProps }: AppPropsWithLayout) {
             defaultTheme="dark"
             disableTransitionOnChange
         >
-            <SolanaProvider>
-                {mounted && getLayout(<Component {...pageProps} />)}
-            </SolanaProvider>
+            <QueryProvider>
+                <SolanaWalletProvider>
+                    {mounted && getLayout(<Component {...pageProps} />)}
+                </SolanaWalletProvider>
+            </QueryProvider>
         </ThemeProvider>
     );
 }

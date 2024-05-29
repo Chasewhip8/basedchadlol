@@ -7,7 +7,7 @@ import {
     useRef,
     useState,
 } from "react";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Dropzone from "react-dropzone";
 import { CirclePlusIcon, SaveIcon, XIcon } from "lucide-react";

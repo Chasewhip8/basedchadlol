@@ -1,11 +1,9 @@
 import { FC, PropsWithChildren } from "react";
 import NavBar from "./NavBar";
-import { ThemeProvider } from "./providers/ThemeProvider";
-import SolanaProvider from "./providers/SolanaProvider";
 
 const DefaultLayout: FC<PropsWithChildren> = ({ children }) => {
     return (
-        <div className="h-full relative">
+        <div className="h-full relative mx-2">
             <NavBar />
             <main className="flex flex-col items-center">{children}</main>
         </div>
