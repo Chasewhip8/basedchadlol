@@ -22,7 +22,7 @@ const TokenListProvider: FC<PropsWithChildren> = ({ children }) => {
 };
 
 export const TokenListGuard: FC<PropsWithChildren> = ({ children }) => {
-    const tokenList = useStore((state) => state.tokenList);
+    const tokenList = useStore((state) => state.cachedFilteredTokenList);
     if (!tokenList) {
         return <Loading />;
     }

@@ -1,9 +1,12 @@
 import {
+    FEE_LAMPORTS,
+    FEE_WALLET,
     MIN_JUPITER_ROUTE_REFETCH_INTERVAL,
     RESERVED_FEE_ACCOUNTS,
     SWAP_REFRESH_INTERVAL,
     TOKEN_DUST_MAX_VALUE,
     TOKEN_MINT,
+    VALUE_IN_MIN_FOR_FEE_USD,
 } from "@/lib/config";
 import {
     BSC_TOKEN,
@@ -20,15 +23,36 @@ import { createWithEqualityFn } from "zustand/traditional";
 import { persist, subscribeWithSelector } from "zustand/middleware";
 import { shallow } from "zustand/shallow";
 import { original, produce } from "immer";
-import { JUPITER_API } from "@/lib/jupiter";
-import { QuoteResponse } from "@jup-ag/api";
+import { JUPITER_API, deserializeInstruction } from "@/lib/jupiter";
+import { QuoteResponse, SwapInstructionsResponse } from "@jup-ag/api";
 import {
     selectiveArrayShallow,
     selectiveShallow,
 } from "@/lib/selectiveShallow";
-import { Transaction, TransactionSignature } from "@solana/web3.js";
+import {
+    ComputeBudgetInstruction,
+    ComputeBudgetProgram,
+    PublicKey,
+    SystemInstruction,
+    SystemProgram,
+    Transaction,
+    TransactionInstruction,
+    TransactionMessage,
+    TransactionSignature,
+    VersionedTransaction,
+} from "@solana/web3.js";
+import { getUniqueId } from "@/lib/utils";
+import base58 from "bs58";
+import {
+    getPriorityFeeEstimate,
+    getAddressLookupTableAccounts,
+} from "@/lib/helius/api";
+import { CONNECTION } from "@/lib/solana";
+import { WalletContextState } from "@solana/wallet-adapter-react";
 
 export interface CacheSlice {
+    wallet?: WalletContextState;
+    setWallet: (wallet: WalletContextState) => void;
     tokenList: Token[] | null;
     setTokenList: (list: Token[]) => void;
     heliusTokenList: Token[] | null;
@@ -38,6 +62,22 @@ export interface CacheSlice {
 }
 
 const createCacheSlice: StateCreator<Store, [], [], CacheSlice> = (set) => ({
+    wallet: undefined,
+    setWallet: (wallet: WalletContextState) =>
+        set((state) => {
+            if (state.wallet && state.wallet.publicKey != wallet.publicKey) {
+                // Clear the cached token list when the wallet changes.
+                return {
+                    wallet: wallet,
+                    heliusTokenList: null,
+                    cachedFilteredTokenList: null,
+                };
+            } else {
+                return {
+                    wallet: wallet,
+                };
+            }
+        }),
     tokenList: null,
     setTokenList: (list: Token[]) =>
         set(() => ({
@@ -159,23 +199,30 @@ export type InputTokenEntry = {
     };
 };
 
-type TransactionStatus =
-    | "PENDING_TRANSACTION"
-    | "PENDING_SIGNATURE"
-    | "SIGNING"
-    | "CONFIRMING";
+type TransactionStatus = "PENDING" | "CONFIRMED" | "FAILED";
+
+export type SwapTransactionInfo = {
+    inputTokenAddress: string;
+    inAmount: number;
+    swapInstructions?: SwapInstructionsResponse;
+    status: TransactionStatus;
+    transactionHash?: string;
+};
+
+type SwapIntentStatus =
+    | "SWAPPING"
+    | "PROCESSING"
+    | "SENT"
+    | "TRANSACTIONS_CREATE_FAILED";
 
 export type SwapIntent = {
     intentId: number;
+    userAddress: string;
     timeStamp: number;
     outputToken: string;
     outAmount: number;
-    transactions: {
-        inputTokenAddress: string;
-        inAmount: number;
-        transaction?: Transaction;
-        status: TransactionStatus;
-    }[];
+    transactions: SwapTransactionInfo[];
+    status: SwapIntentStatus;
 };
 
 export interface SwapSlice {
@@ -209,7 +256,23 @@ export interface SwapSlice {
 
     // Swap
     swapIntents: SwapIntent[];
-    swapAllRoutes: () => void;
+    setSwapIntentInstructions: (
+        intentId: number,
+        inputToken: string,
+        swapInstructions: SwapInstructionsResponse,
+    ) => void;
+    swapAllRoutes: (userAddress: string) => void;
+    setSwapTransactionIntentStatus: (
+        intentId: number,
+        inputToken: string,
+        status: TransactionStatus,
+    ) => void;
+    setSwapIntentStatus: (intentId: number, status: SwapIntentStatus) => void;
+    setSwapTransactionIntentSignatures: (
+        intentId: number,
+        signatures: TransactionSignature[],
+    ) => void;
+    processSwapIntents: () => void;
 }
 
 const createSwapSlice: StateCreator<Store, [], [], SwapSlice> = (set, get) => ({
@@ -515,43 +578,286 @@ const createSwapSlice: StateCreator<Store, [], [], SwapSlice> = (set, get) => ({
         }
     },
     swapIntents: [],
-    swapAllRoutes: () =>
+    setSwapIntentInstructions: (
+        intentId: number,
+        inputToken: string,
+        swapInstructions: SwapInstructionsResponse,
+    ) =>
+        set(
+            produce((state: Store) => {
+                const swapIntent = state.swapIntents.find(
+                    (intent) => intent.intentId === intentId,
+                );
+                if (!swapIntent) {
+                    return;
+                }
+
+                const transactionInfo = swapIntent.transactions.find(
+                    (info) => info.inputTokenAddress == inputToken,
+                );
+                if (!transactionInfo) {
+                    return;
+                }
+
+                transactionInfo.swapInstructions = swapInstructions;
+            }),
+        ),
+    swapAllRoutes: (userAddress: string) =>
         set((state) => {
-            const transactions = [];
+            if (!state.wallet || !state.wallet.connected) {
+                return state;
+            }
+
+            const intentId = getUniqueId();
+            const transactions: SwapTransactionInfo[] = [];
             let outAmount = 0;
             for (const inputTokenEntry of state.inputTokens) {
                 if (!inputTokenEntry.route?.jupiterQuote) {
                     continue;
                 }
+
+                transactions.push({
+                    inputTokenAddress: inputTokenEntry.tokenAddress,
+                    inAmount: inputTokenEntry.amount,
+                    swapInstructions: undefined,
+                    status: "PENDING",
+                });
+
+                JUPITER_API.swapInstructionsPost({
+                    swapRequest: {
+                        userPublicKey: userAddress,
+                        wrapAndUnwrapSol: true,
+                        useSharedAccounts: true,
+                        dynamicComputeUnitLimit: true,
+                        quoteResponse: inputTokenEntry.route.jupiterQuote,
+                    },
+                })
+                    .then((response) => {
+                        get().setSwapIntentInstructions(
+                            intentId,
+                            inputTokenEntry.tokenAddress,
+                            response,
+                        );
+                    })
+                    .catch((error) => {
+                        console.warn(error);
+
+                        get().setSwapIntentStatus(
+                            intentId,
+                            "TRANSACTIONS_CREATE_FAILED",
+                        );
+                    });
             }
 
             return {
                 swapIntents: [
                     {
+                        intentId: intentId,
+                        userAddress: userAddress,
                         timeStamp: Date.now(),
                         outputToken: state.outputToken,
                         outAmount: outAmount,
+                        transactions: transactions,
+                        status: "SWAPPING",
                     },
                     ...state.swapIntents,
                 ],
             };
         }),
+    setSwapTransactionIntentStatus: (
+        intentId: number,
+        inputToken: string,
+        status: TransactionStatus,
+    ) =>
+        set(
+            produce((state: Store) => {
+                const swapIntent = state.swapIntents.find(
+                    (t) => t.intentId === intentId,
+                );
+                if (!swapIntent) {
+                    return;
+                }
+
+                const transactionInfo = swapIntent.transactions.find(
+                    (t) => t.inputTokenAddress === inputToken,
+                );
+                if (!transactionInfo) {
+                    return;
+                }
+
+                transactionInfo.status = status;
+            }),
+        ),
+    setSwapIntentStatus: (intentId: number, status: SwapIntentStatus) =>
+        set(
+            produce((state: Store) => {
+                const swapIntent = state.swapIntents.find(
+                    (t) => t.intentId === intentId,
+                );
+                if (!swapIntent) {
+                    return;
+                }
+
+                swapIntent.status = status;
+            }),
+        ),
+    setSwapTransactionIntentSignatures: (
+        intentId: number,
+        signatures: TransactionSignature[],
+    ) =>
+        set(
+            produce((state: Store) => {
+                const swapIntent = state.swapIntents.find(
+                    (t) => t.intentId === intentId,
+                );
+                if (!swapIntent) {
+                    return;
+                }
+
+                swapIntent.status = status;
+            }),
+        ),
+    processSwapIntents: () => {
+        const state = get();
+
+        for (const swapIntent of state.swapIntents) {
+            if (swapIntent.status != "SWAPPING") {
+                continue;
+            }
+
+            const allTransactionsPresent =
+                swapIntent.transactions.length > 0 &&
+                swapIntent.transactions.every(
+                    (transaction) =>
+                        transaction.swapInstructions &&
+                        transaction.status === "PENDING",
+                );
+            if (!allTransactionsPresent) {
+                continue;
+            }
+
+            // Ensure we do not have multiple listeners for the same intent
+            state.setSwapIntentStatus(swapIntent.intentId, "PROCESSING");
+
+            // Process, sign, and send transaction.
+            (async () => {
+                const priorityFee = (await getPriorityFeeEstimate()).result
+                    .priorityFeeEstimate;
+
+                const addressLookupTableAddresses =
+                    swapIntent.transactions.flatMap(
+                        (transactionInfo) =>
+                            transactionInfo.swapInstructions
+                                ?.addressLookupTableAddresses,
+                    ) as string[];
+
+                const addressLookupTableAccounts =
+                    await getAddressLookupTableAccounts(
+                        addressLookupTableAddresses,
+                    );
+
+                const blockhash = (await CONNECTION.getLatestBlockhash())
+                    .blockhash;
+
+                const transactions: VersionedTransaction[] = [];
+
+                for (const transactionInfo of swapIntent.transactions) {
+                    const swapInstructions = transactionInfo.swapInstructions;
+                    if (!swapInstructions) {
+                        return;
+                    }
+
+                    const computeLimit =
+                        ComputeBudgetInstruction.decodeSetComputeUnitLimit(
+                            deserializeInstruction(
+                                swapInstructions.computeBudgetInstructions[0],
+                            ),
+                        ).units + 1000;
+
+                    const correctedComputeUnitPrice = Math.max(
+                        priorityFee,
+                        (10000 / computeLimit) * 1000000, // This is the min compute price for helius fast lane
+                    );
+
+                    const instructions: TransactionInstruction[] = [
+                        ComputeBudgetProgram.setComputeUnitLimit({
+                            units: computeLimit,
+                        }),
+                        ComputeBudgetProgram.setComputeUnitPrice({
+                            microLamports: correctedComputeUnitPrice,
+                        }),
+                        ...swapInstructions.setupInstructions.map(
+                            deserializeInstruction,
+                        ),
+                        deserializeInstruction(
+                            swapInstructions.swapInstruction,
+                        ),
+                    ];
+
+                    if (swapInstructions.cleanupInstruction) {
+                        instructions.push(
+                            deserializeInstruction(
+                                swapInstructions.cleanupInstruction,
+                            ),
+                        );
+                    }
+
+                    const payer = new PublicKey(swapIntent.userAddress);
+
+                    // Check value of swap
+                    const maybeInputToken =
+                        state.cachedFilteredTokenList &&
+                        state.cachedFilteredTokenList[
+                            transactionInfo.inputTokenAddress
+                        ];
+                    if (
+                        maybeInputToken &&
+                        maybeInputToken.price &&
+                        convertTokenLamportsToNatural(
+                            maybeInputToken,
+                            transactionInfo.inAmount,
+                        ) *
+                            maybeInputToken.price >=
+                            VALUE_IN_MIN_FOR_FEE_USD
+                    ) {
+                        instructions.push(
+                            SystemProgram.transfer({
+                                fromPubkey: payer,
+                                toPubkey: new PublicKey(FEE_WALLET),
+                                lamports: FEE_LAMPORTS,
+                            }),
+                        );
+                    }
+
+                    const messageV0 = new TransactionMessage({
+                        payerKey: new PublicKey(swapIntent.userAddress),
+                        recentBlockhash: blockhash,
+                        instructions: instructions,
+                    }).compileToV0Message(addressLookupTableAccounts);
+                    transactions.push(new VersionedTransaction(messageV0));
+                }
+
+                const wallet = get().wallet;
+                if (
+                    !wallet ||
+                    !wallet.connected ||
+                    !wallet.signAllTransactions
+                ) {
+                    return;
+                }
+
+                const signatures = wallet.signAllTransactions(transactions);
+            })().catch((error) => {
+                console.warn(error);
+
+                get().setSwapIntentStatus(
+                    swapIntent.intentId,
+                    "TRANSACTIONS_CREATE_FAILED",
+                );
+            });
+        }
+    },
 });
-
-/*
-
-export type SwapIntent = {
-    timeStamp: number;
-    outputToken: string;
-    outAmount: number;
-    transactions: {
-        inputTokenAddress: string;
-        inAmount: number;
-        transaction: Transaction;
-        status: TransactionStatus;
-    }[];
-};
-*/
 
 type Store = CacheSlice & GlobalSettings & SwapSlice;
 
@@ -606,6 +912,17 @@ useStore.subscribe(
             selectiveArrayShallow(a[0], b[0], {
                 route: true,
                 swap: true,
+                status: true,
+            }),
+    },
+);
+
+useStore.subscribe(
+    (state) => [state.swapIntents],
+    () => useStore.getState().processSwapIntents(),
+    {
+        equalityFn: (a, b) =>
+            selectiveArrayShallow(a[0], b[0], {
                 status: true,
             }),
     },

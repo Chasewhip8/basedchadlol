@@ -8,16 +8,23 @@ import { useQuery } from "@tanstack/react-query";
 import { FC, PropsWithChildren, useEffect } from "react";
 
 const UserBalanceProvider: FC<PropsWithChildren> = ({ children }) => {
-    const wallet = useWallet();
+    const wallet = useStore((state) => state.wallet);
     const address = wallet?.publicKey?.toBase58();
 
-    const { data } = useQuery<{ result: DAS.GetAssetResponseList }>({
+    const { data, refetch } = useQuery<{ result: DAS.GetAssetResponseList }>({
         queryKey: ["helius-user-balances", address],
         queryFn: () => getUserAssets(address as string),
         enabled: Boolean(address), // Only run when there is a valid wallet address
     });
 
-    const { setHeliusTokenList: setTokenInfoList } = useStore();
+    const heliusTokenList = useStore((state) => state.heliusTokenList);
+    useEffect(() => {
+        if (!heliusTokenList) {
+            refetch();
+        }
+    }, [heliusTokenList, refetch]);
+
+    const setTokenInfoList = useStore((state) => state.setHeliusTokenList);
     useEffect(() => {
         if (!data?.result) {
             return;

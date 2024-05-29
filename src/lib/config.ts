@@ -8,3 +8,4 @@ export const TOKEN_DUST_MAX_VALUE = 10;
 export const RESERVED_FEE_ACCOUNTS = 1;
 export const BLOCKHASH_MAX_AGE_MS = 1000 * 30;
 export const SWAP_REFRESH_INTERVAL = 1000 * 15;
+export const VALUE_IN_MIN_FOR_FEE_USD = 1;
