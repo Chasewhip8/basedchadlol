@@ -13,7 +13,7 @@ const NavBar: FC = () => {
                     <Image src="/chad.png" alt="logo" width={60} height={60} />
                 </span>
                 <NavButton href="/">Home</NavButton>
-                <NavButton href="/swap">Swap</NavButton>
+                <NavButton href="/swap/">Swap</NavButton>
                 <NavButton disabled href="/liquidity">
                     Liquidity
                 </NavButton>
