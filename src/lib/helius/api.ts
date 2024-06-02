@@ -9,6 +9,7 @@ import { CLUSTER_URL, HELIUS_MAX_RETIRES } from "../config";
 import { DAS, PriorityLevel } from "./types";
 import bs58 from "bs58";
 import { CONNECTION } from "../solana";
+import { JUPITER_API } from "../jupiter";
 
 export async function getUserAssets(
     address: string,
@@ -108,7 +109,15 @@ async function pollTransactionConfirmation(
 
             if (status?.value?.confirmationStatus === "confirmed") {
                 clearInterval(intervalId);
-                resolve(txtSig);
+                if (status.value.err) {
+                    reject(
+                        new Error(
+                            `Transaction ${txtSig} failed: ${status.value.err}`,
+                        ),
+                    );
+                } else {
+                    resolve(txtSig);
+                }
             }
         }, interval);
     });

@@ -729,6 +729,8 @@ const createSwapSlice: StateCreator<Store, [], [], SwapSlice> = (set, get) => ({
                     return;
                 }
 
+                console.log(status);
+
                 transactionInfo.status = status;
             }),
         ),

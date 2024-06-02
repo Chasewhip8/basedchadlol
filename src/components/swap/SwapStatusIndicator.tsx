@@ -75,30 +75,27 @@ const SwapStatusIndicator: FC<SwapStatusProps> = ({ entry }) => {
                     <InfoIcon className="w-3 h-3 ml-2 text-yellow-400 flex-shrink-0 cursor-pointer" />
                 )}
             </PopoverTrigger>
-            <PopoverContent
-                sideOffset={-7}
-                className="flex flex-col gap-y-1 p-2 px-3"
-            >
+            <PopoverContent className="flex flex-col gap-y-1 font-semibold">
                 {(swapDisplayError && (
-                    <p className="font-semibold">
+                    <p>
                         Swap excluded because {getHumanReadableError(status)}.
                     </p>
                 )) ||
                     (swapDisplayWarning && (
-                        <p className="font-semibold">
+                        <p>
                             Swap included however{" "}
                             {getHumanReadableError(status)}.
                         </p>
                     )) ||
                     (priceImpactSlippageWarning && (
-                        <p className="font-semibold">
+                        <p>
                             Swap included however the price impact of{" "}
                             {priceImpact.toFixed(2)}% is greater than the
                             slippage tolerance.
                         </p>
                     )) ||
                     (hasRoute && (
-                        <p className="font-semibold">
+                        <p>
                             This route is being included in the swap. The swap
                             will be executed if it{"'"}s transaction is
                             confirmed.

@@ -17,13 +17,13 @@ const SwapIntentIndicator: FC<SwapIntentIndicatorProps> = ({ intent }) => {
     return (
         <Popover>
             <PopoverTrigger asChild>
-                <div className="ml-auto font-bold flex flex-row items-center gap-x-2 whitespace-nowrap">
+                <div className="ml-auto font-bold flex flex-row items-center gap-x-2 whitespace-nowrap cursor-pointer">
                     {completedTransactions.length} /{" "}
                     {intent.transactions.length}
                     <SwapIntentIndicatorInner intent={intent} />
                 </div>
             </PopoverTrigger>
-            <PopoverContent sideOffset={-7} className="flex flex-col gap-y-1">
+            <PopoverContent className="flex flex-col gap-y-1">
                 <SwapIntentTooltip intent={intent} />
             </PopoverContent>
         </Popover>
@@ -31,6 +31,10 @@ const SwapIntentIndicator: FC<SwapIntentIndicatorProps> = ({ intent }) => {
 };
 
 const SwapIntentIndicatorInner: FC<SwapIntentIndicatorProps> = ({ intent }) => {
+    if (intent.transactions.find((t) => t.status == "FAILED")) {
+        return <TriangleAlert className="mr-2 h-4 w-4 text-yellow-500" />;
+    }
+
     switch (intent.status) {
         case "SWAPPING":
         case "PROCESSING":
@@ -68,10 +72,7 @@ const SwapIntentTooltip: FC<SwapIntentIndicatorProps> = ({ intent }) => {
     if (failedTransactions.length > 0) {
         return (
             <p className="flex flex-col gap-y-2">
-                Some or all of the swap has failed to complete.{" "}
-                {failedTransactions.length} transactions have failed to confirm.
-                These transactions still could have been successful, but likely
-                not. Please try again.
+                Some or all of the swaps have failed to complete.
                 <Separator />
                 <div className="flex flex-col gap-y-0.5">
                     {failedTransactions.map((ft) => {
@@ -80,8 +81,11 @@ const SwapIntentTooltip: FC<SwapIntentIndicatorProps> = ({ intent }) => {
 
                         return (
                             <p key={ft.inputTokenAddress}>
-                                - {maybeInput?.name || ft.inputTokenAddress}{" "}
-                                failed to swap.
+                                -{" "}
+                                <span className="font-semibold">
+                                    {maybeInput?.name || ft.inputTokenAddress}
+                                </span>{" "}
+                                has failed to swap.
                             </p>
                         );
                     })}
