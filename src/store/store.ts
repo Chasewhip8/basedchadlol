@@ -16,7 +16,7 @@ import {
     WRAPPED_SOL_MINT,
     convertTokenLamportsToNatural,
     convertTokenNaturalToLamports,
-    isStrictToken,
+    isJupiterTrustedToken,
 } from "@/lib/token";
 import { StateCreator } from "zustand";
 import { createWithEqualityFn } from "zustand/traditional";
@@ -131,10 +131,7 @@ const createCacheSlice: StateCreator<Store, [], [], CacheSlice> = (set) => ({
                 const len = sorted.length;
                 for (let i = 0; i < len; i++) {
                     const token = sorted[i];
-                    if (
-                        cachedList.hasOwnProperty(token.address) ||
-                        (!state.allowUntrustedTokens && !isStrictToken(token))
-                    ) {
+                    if (cachedList.hasOwnProperty(token.address)) {
                         continue;
                     }
                     cachedList[token.address] = token;
@@ -152,27 +149,34 @@ const createCacheSlice: StateCreator<Store, [], [], CacheSlice> = (set) => ({
 });
 
 export interface PersistedGlobalSettings {
+    autoSlippage: boolean;
+    maxAutoSlippageBps: number;
     maxSlippageBps: number;
-    allowUntrustedTokens: boolean;
 }
 
 export interface GlobalSettings extends PersistedGlobalSettings {
+    setAutoSlippage: (autoSlippage: boolean) => void;
+    setMaxAutoSlippageBps: (maxAutoSlippageBps: number) => void;
     setMaxSlippageBps: (maxSlippageBps: number) => void;
-    setAllowUntrustedTokens: (allowUntrustedTokens: boolean) => void;
 }
 
 const createGlobalSettingsSlice: StateCreator<Store, [], [], GlobalSettings> = (
     set,
 ) => ({
-    maxSlippageBps: 50,
+    autoSlippage: true,
+    setAutoSlippage: (autoSlippage: boolean) =>
+        set(() => ({
+            autoSlippage: autoSlippage,
+        })),
+    maxAutoSlippageBps: 300,
+    setMaxAutoSlippageBps: (maxAutoSlippageBps: number) =>
+        set(() => ({
+            maxAutoSlippageBps: maxAutoSlippageBps,
+        })),
+    maxSlippageBps: 100,
     setMaxSlippageBps: (maxSlippageBps: number) =>
         set(() => ({
             maxSlippageBps: maxSlippageBps,
-        })),
-    allowUntrustedTokens: false,
-    setAllowUntrustedTokens: (allowUntrustedTokens: boolean) =>
-        set(() => ({
-            allowUntrustedTokens: allowUntrustedTokens,
         })),
 });
 
@@ -545,6 +549,11 @@ const createSwapSlice: StateCreator<Store, [], [], SwapSlice> = (set, get) => ({
                 inputMint: inputTokenEntry.tokenAddress,
                 outputMint: state.outputToken,
                 amount: inputTokenEntry.amount,
+                autoSlippage: state.autoSlippage,
+                maxAutoSlippageBps: state.maxAutoSlippageBps,
+                slippageBps: state.autoSlippage
+                    ? undefined
+                    : state.maxSlippageBps,
                 maxAccounts: 64 - RESERVED_FEE_ACCOUNTS,
             })
                 .then((quote) => {
@@ -946,8 +955,9 @@ const useStore = createWithEqualityFn<
             {
                 name: "global-settings-store",
                 partialize: (state) => ({
+                    autoSlippage: state.autoSlippage,
                     maxSlippageBps: state.maxSlippageBps,
-                    allowUntrustedTokens: state.allowUntrustedTokens,
+                    maxAutoSlippageBps: state.maxAutoSlippageBps,
                 }),
             },
         ),
@@ -958,11 +968,7 @@ const useStore = createWithEqualityFn<
 // Subscribers
 
 useStore.subscribe(
-    (state) => [
-        state.tokenList,
-        state.heliusTokenList,
-        state.allowUntrustedTokens,
-    ],
+    (state) => [state.tokenList, state.heliusTokenList],
     () => {
         useStore.getState().updateCachedFilteredTokenList();
         console.log("Token list updated");

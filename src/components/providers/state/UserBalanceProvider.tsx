@@ -1,9 +1,8 @@
-import { CLUSTER_URL, SOL_LAMORTS_RESERVED } from "@/lib/config";
+import { SOL_LAMORTS_RESERVED } from "@/lib/config";
 import { DAS } from "@/lib/helius/types";
 import { getUserAssets } from "@/lib/helius/api";
 import { Token, SOL_TOKEN } from "@/lib/token";
 import useStore from "@/store/store";
-import { useWallet } from "@solana/wallet-adapter-react";
 import { useQuery } from "@tanstack/react-query";
 import { FC, PropsWithChildren, useEffect } from "react";
 
@@ -58,7 +57,7 @@ const UserBalanceProvider: FC<PropsWithChildren> = ({ children }) => {
                 name: item.content?.metadata.name || tokenInfo.symbol,
                 symbol: tokenInfo.symbol,
                 logoURI: item.content?.links?.image,
-                tags: ["helius"],
+                tags: ["wallet"],
                 price: tokenInfo.price_info?.price_per_token || 0,
                 balance: tokenInfo.balance,
             });

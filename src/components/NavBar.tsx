@@ -4,6 +4,9 @@ import Image from "next/image";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { Button } from "./ui/button";
 import { SettingsIcon } from "lucide-react";
+import SettingsDropdown, {
+    SettingsDropdownCog,
+} from "./settings/SettingsDropdown";
 
 const NavBar: FC = () => {
     return (
@@ -29,14 +32,7 @@ const NavBar: FC = () => {
             </div>
 
             <div className="ml-auto flex flex-row gap-x-2 items-center">
-                <Button
-                    disabled
-                    variant="outline"
-                    size="icon"
-                    className="rounded-full h-12 w-12 flex-shrink-0"
-                >
-                    <SettingsIcon />
-                </Button>
+                <SettingsDropdownCog />
                 <WalletMultiButton />
             </div>
         </div>

@@ -3,8 +3,6 @@ import { PublicKey, TransactionInstruction } from "@solana/web3.js";
 
 export const JUPITER_API = createJupiterApiClient();
 
-export async function compileSwapTransactions() {}
-
 export function deserializeInstruction(instruction: Instruction) {
     return new TransactionInstruction({
         programId: new PublicKey(instruction.programId),

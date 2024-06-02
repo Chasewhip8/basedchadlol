@@ -2,13 +2,8 @@ import Swap from "@/pages/swap";
 import useStore, { SwapIntent } from "@/store/store";
 import { CircleCheck, TriangleAlert } from "lucide-react";
 import { FC } from "react";
-import {
-    Tooltip,
-    TooltipContent,
-    TooltipProvider,
-    TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { Separator } from "./ui/separator";
+import { Separator } from "../ui/separator";
+import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 
 interface SwapIntentIndicatorProps {
     intent: SwapIntent;
@@ -20,23 +15,18 @@ const SwapIntentIndicator: FC<SwapIntentIndicatorProps> = ({ intent }) => {
     );
 
     return (
-        <TooltipProvider>
-            <Tooltip>
-                <TooltipTrigger asChild>
-                    <div className="ml-auto font-bold flex flex-row items-center gap-x-2 whitespace-nowrap">
-                        {completedTransactions.length} /{" "}
-                        {intent.transactions.length}
-                        <SwapIntentIndicatorInner intent={intent} />
-                    </div>
-                </TooltipTrigger>
-                <TooltipContent
-                    sideOffset={-7}
-                    className="flex flex-col gap-y-1"
-                >
-                    <SwapIntentTooltip intent={intent} />
-                </TooltipContent>
-            </Tooltip>
-        </TooltipProvider>
+        <Popover>
+            <PopoverTrigger asChild>
+                <div className="ml-auto font-bold flex flex-row items-center gap-x-2 whitespace-nowrap">
+                    {completedTransactions.length} /{" "}
+                    {intent.transactions.length}
+                    <SwapIntentIndicatorInner intent={intent} />
+                </div>
+            </PopoverTrigger>
+            <PopoverContent sideOffset={-7} className="flex flex-col gap-y-1">
+                <SwapIntentTooltip intent={intent} />
+            </PopoverContent>
+        </Popover>
     );
 };
 

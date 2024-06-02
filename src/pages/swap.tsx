@@ -23,11 +23,13 @@ import useStore from "@/store/store";
 import { WalletIcon } from "lucide-react";
 import { convertTokenLamportsToNatural } from "@/lib/token";
 import { Skeleton } from "@/components/ui/skeleton";
-import SwapStatusIndicator from "@/components/SwapStatusIndicator";
+import SwapStatusIndicator from "@/components/swap/SwapStatusIndicator";
 import SwapButton from "@/components/swap/SwapButton";
 import TokenIcon from "@/components/token/TokenIcon";
-import SwapIntentIndicator from "@/components/SwapIntentIndicator";
+import SwapIntentIndicator from "@/components/swap/SwapIntentIndicator";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import SwapWarning from "@/components/swap/SwapWarning";
+import SwapWarningsList from "@/components/swap/SwapWarningsList";
 
 const Swap: NextPageWithLayout = () => {
     const [
@@ -186,7 +188,7 @@ const Swap: NextPageWithLayout = () => {
                                                         e.target.value,
                                                     )
                                                 }
-                                                className="text-right h-full [-moz-appearance:_textfield] [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none"
+                                                className="text-right h-full"
                                             />
                                         </div>
                                         <Button
@@ -265,6 +267,7 @@ const Swap: NextPageWithLayout = () => {
                         </div>
                     </TokenListGuard>
                 </Card>
+                <SwapWarningsList />
                 <Card className="p-3 mt-3">
                     <SwapButton />
                 </Card>

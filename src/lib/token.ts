@@ -8,7 +8,7 @@ type JupiterTags =
     | "unknown"
     | "token-2022";
 
-type CustomTags = "helius";
+type CustomTags = "wallet";
 
 export type Token = {
     address: string;
@@ -26,13 +26,12 @@ export type TokenList = {
     [key: string]: Token;
 };
 
-export function isStrictToken(token: Token): boolean {
+export function isJupiterTrustedToken(token: Token): boolean {
     for (let i = 0; i < token.tags.length; i++) {
         switch (token.tags[i]) {
             case "old-registry":
             case "community":
             case "wormhole":
-            case "helius":
                 return true;
         }
     }
@@ -75,7 +74,7 @@ export const UNKOWN_TOKEN: Token = {
     name: "Unknown",
     symbol: "UNKOWN",
     logoURI: "",
-    tags: [],
+    tags: ["old-registry"],
     price: 0,
     balance: 0,
 };
