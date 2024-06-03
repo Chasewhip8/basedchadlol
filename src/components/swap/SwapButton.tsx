@@ -10,7 +10,10 @@ const SwapButton: FC = () => {
     ]);
 
     const validInputTokenEntries = useMemo(
-        () => inputTokenEntries.filter((entry) => entry.status == "ROUTING"),
+        () =>
+            inputTokenEntries.filter(
+                (entry) => entry.route?.jupiterQuote != undefined,
+            ),
         [inputTokenEntries],
     );
 

@@ -101,43 +101,46 @@ const TokenListDialogContents: FC<
                 <DialogTitle>Select Token(s)</DialogTitle>
                 <DialogDescription></DialogDescription>
             </DialogHeader>
-            <div className="flex flex-row gap-x-2">
-                {TOP_TOKENS.map((tokenAddress) => {
-                    const token = tokenList[tokenAddress];
-                    const included = selectedTokens?.includes(tokenAddress);
-                    return (
-                        <div
-                            key={tokenAddress}
-                            className={cn(
-                                "flex flex-row border cursor-pointer px-3 py-1.5 w-full items-center gap-x-2 hover:bg-secondary/80 rounded-md bg-card",
-                                included && "border-primary/60 bg-primary/10",
-                            )}
-                            onClick={() => {
-                                if (
-                                    selectedTokens &&
-                                    closeOnSelect &&
-                                    !selectedTokens.includes(token.address)
-                                ) {
-                                    setOpen(false);
-                                }
+            <div className="flex flex-col gap-y-2.5">
+                <div className="flex flex-row gap-x-2 overflow-x-scroll">
+                    {TOP_TOKENS.map((tokenAddress) => {
+                        const token = tokenList[tokenAddress];
+                        const included = selectedTokens?.includes(tokenAddress);
+                        return (
+                            <div
+                                key={tokenAddress}
+                                className={cn(
+                                    "flex flex-row border cursor-pointer px-3 py-1.5 w-full items-center gap-x-2 hover:bg-secondary/80 rounded-md bg-card",
+                                    included &&
+                                        "border-primary/60 bg-primary/10",
+                                )}
+                                onClick={() => {
+                                    if (
+                                        selectedTokens &&
+                                        closeOnSelect &&
+                                        !selectedTokens.includes(token.address)
+                                    ) {
+                                        setOpen(false);
+                                    }
 
-                                if (onSelect) {
-                                    onSelect(token.address);
-                                }
-                            }}
-                        >
-                            <TokenIcon token={token} className="mr-2" />
-                            {token.symbol}
-                        </div>
-                    );
-                })}
+                                    if (onSelect) {
+                                        onSelect(token.address);
+                                    }
+                                }}
+                            >
+                                <TokenIcon token={token} className="mr-2" />
+                                {token.symbol}
+                            </div>
+                        );
+                    })}
+                </div>
+                <Input
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.currentTarget.value)}
+                    placeholder="Search for a token"
+                    className="h-max"
+                />
             </div>
-            <Input
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.currentTarget.value)}
-                placeholder="Search for a token"
-                className="h-max"
-            />
             <ScrollArea ref={parentRef}>
                 <div
                     style={{

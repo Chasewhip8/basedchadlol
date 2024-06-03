@@ -50,6 +50,7 @@ import {
 } from "@/lib/helius/api";
 import { CONNECTION } from "@/lib/solana";
 import { WalletContextState } from "@solana/wallet-adapter-react";
+import { toast } from "@/components/ui/use-toast";
 
 export interface CacheSlice {
     wallet?: WalletContextState;
@@ -735,8 +736,6 @@ const createSwapSlice: StateCreator<Store, [], [], SwapSlice> = (set, get) => ({
                     return;
                 }
 
-                console.log(status);
-
                 transactionInfo.status = status;
             }),
         ),
@@ -801,6 +800,12 @@ const createSwapSlice: StateCreator<Store, [], [], SwapSlice> = (set, get) => ({
 
             // Ensure we do not have multiple listeners for the same intent
             state.setSwapIntentStatus(swapIntent.intentId, "PROCESSING");
+
+            toast({
+                title: "Swap: Processing Swap",
+                description:
+                    "Processing and assembling swap transactions. Please wait.",
+            });
 
             // Process, sign, and send transaction.
             (async () => {
@@ -931,9 +936,22 @@ const createSwapSlice: StateCreator<Store, [], [], SwapSlice> = (set, get) => ({
                         ),
                 );
 
+                toast({
+                    title: "Swap: Executed Swap",
+                    description:
+                        "Swap transactions have been sent and confirmed.",
+                });
+
                 get().setSwapIntentStatus(swapIntent.intentId, "COMPLETED");
             })().catch((error) => {
                 console.warn(error);
+
+                toast({
+                    variant: "destructive",
+                    title: "Swap: Error Processing Swap",
+                    description:
+                        "There was an error assembling and sending the swap transactions. Please try again.",
+                });
 
                 get().setSwapIntentStatus(
                     swapIntent.intentId,

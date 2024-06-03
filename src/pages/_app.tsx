@@ -8,6 +8,7 @@ import { ThemeProvider } from "next-themes";
 import "@solana/wallet-adapter-react-ui/styles.css";
 import "@/styles/globals.css";
 import QueryProvider from "@/components/providers/QueryProvider";
+import { Toaster } from "@/components/ui/toaster";
 
 export type NextPageWithLayout<P = {}, IP = P> = NextPage<P, IP> & {
     getLayout?: (page: ReactElement) => ReactNode;
@@ -33,6 +34,7 @@ export default function MyApp({ Component, pageProps }: AppPropsWithLayout) {
             <QueryProvider>
                 <SolanaWalletProvider>
                     {mounted && getLayout(<Component {...pageProps} />)}
+                    <Toaster />
                 </SolanaWalletProvider>
             </QueryProvider>
         </ThemeProvider>
