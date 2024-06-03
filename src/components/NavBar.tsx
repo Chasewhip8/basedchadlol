@@ -26,7 +26,7 @@ const NavBar: FC = () => {
 
                 <div className="w-0.5 h-6 mx-2 rounded-md bg-border"></div>
 
-                <NavButton disabled external href="">
+                <NavButton external href="http://docs.basedchad.lol/">
                     Docs
                 </NavButton>
             </div>

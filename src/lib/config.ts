@@ -10,3 +10,10 @@ export const BLOCKHASH_MAX_AGE_MS = 1000 * 30;
 export const SWAP_REFRESH_INTERVAL = 1000 * 15;
 export const VALUE_IN_MIN_FOR_FEE_USD = 1;
 export const HELIUS_MAX_RETIRES = 6;
+export const TOP_TOKENS = [
+    "So11111111111111111111111111111111111111112",
+    "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+    TOKEN_MINT,
+    "AbrMJWfDVRZ2EWCQ1xSCpoVeVgZNpq1U2AoYG98oRXfn",
+    "7bQsj9DciGXs6cTkhB3D1WbcEjuMpmD7amQRWjEVBpu",
+];

@@ -9,13 +9,15 @@ import {
 } from "../ui/dialog";
 import useStore from "@/store/store";
 import Loading from "../Loading";
-import Image from "next/image";
 import { CheckIcon, FileQuestionIcon } from "lucide-react";
-import { TokenList } from "@/lib/token";
+import { TokenList, isJupiterTrustedToken } from "@/lib/token";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { ScrollArea } from "../ui/scroll-area";
 import { Input } from "../ui/input";
 import TokenIcon from "./TokenIcon";
+import { Badge } from "../ui/badge";
+import { TOP_TOKENS } from "@/lib/config";
+import { cn } from "@/lib/utils";
 
 interface TokenListDialogProps {
     onSelect?: (address: string) => void;
@@ -41,7 +43,7 @@ const TokenListDialog: FC<PropsWithChildren<TokenListDialogProps>> = ({
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>{children}</DialogTrigger>
-            <DialogContent className="h-3/4 max-w-2xl flex flex-col">
+            <DialogContent className="h-5/6 max-w-2xl flex flex-col">
                 {tokenList ? (
                     <TokenListDialogContents
                         {...props}
@@ -99,6 +101,37 @@ const TokenListDialogContents: FC<
                 <DialogTitle>Select Token(s)</DialogTitle>
                 <DialogDescription></DialogDescription>
             </DialogHeader>
+            <div className="flex flex-row gap-x-2">
+                {TOP_TOKENS.map((tokenAddress) => {
+                    const token = tokenList[tokenAddress];
+                    const included = selectedTokens?.includes(tokenAddress);
+                    return (
+                        <div
+                            key={tokenAddress}
+                            className={cn(
+                                "flex flex-row border cursor-pointer px-3 py-1.5 w-full items-center gap-x-2 hover:bg-secondary/80 rounded-md bg-card",
+                                included && "border-primary/60 bg-primary/10",
+                            )}
+                            onClick={() => {
+                                if (
+                                    selectedTokens &&
+                                    closeOnSelect &&
+                                    !selectedTokens.includes(token.address)
+                                ) {
+                                    setOpen(false);
+                                }
+
+                                if (onSelect) {
+                                    onSelect(token.address);
+                                }
+                            }}
+                        >
+                            <TokenIcon token={token} className="mr-2" />
+                            {token.symbol}
+                        </div>
+                    );
+                })}
+            </div>
             <Input
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.currentTarget.value)}
@@ -150,8 +183,13 @@ const TokenListDialogContents: FC<
                                 <span className="text-foreground/60 max-w-40 truncate whitespace-nowrap text-ellipsis">
                                     {token.name}
                                 </span>
+
+                                {isJupiterTrustedToken(token) && (
+                                    <Badge variant="outline">Trusted</Badge>
+                                )}
+
                                 {naturalBalance && (
-                                    <div className="text-foreground/60 ml-auto flex flex-col text-right">
+                                    <div className="text-foreground/60 flex flex-col ml-auto text-right">
                                         {Number.parseFloat(
                                             naturalBalance.toFixed(
                                                 token.decimals,

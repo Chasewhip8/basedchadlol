@@ -30,6 +30,7 @@ import SwapIntentIndicator from "@/components/swap/SwapIntentIndicator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import SwapWarning from "@/components/swap/SwapWarning";
 import SwapWarningsList from "@/components/swap/SwapWarningsList";
+import Link from "next/link";
 
 const Swap: NextPageWithLayout = () => {
     const [
@@ -94,8 +95,17 @@ const Swap: NextPageWithLayout = () => {
                     Swap multiple tokens at once with MEV protection via Helius
                     RPCs. Learn about how fees are used to sustain the based
                     protocol ecosystem{" "}
-                    <Button className="p-0 h-min text-md m-0" variant="link">
-                        here (coming soon)
+                    <Button
+                        className="p-0 h-min text-md m-0"
+                        variant="link"
+                        asChild
+                    >
+                        <Link
+                            target="_blank"
+                            href="http://docs.basedchad.lol/chadswap"
+                        >
+                            here
+                        </Link>
                     </Button>
                     .
                 </p>

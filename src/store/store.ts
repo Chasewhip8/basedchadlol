@@ -132,6 +132,12 @@ const createCacheSlice: StateCreator<Store, [], [], CacheSlice> = (set) => ({
                 for (let i = 0; i < len; i++) {
                     const token = sorted[i];
                     if (cachedList.hasOwnProperty(token.address)) {
+                        const tags = cachedList[token.address].tags;
+                        for (const tag of token.tags) {
+                            if (!tags.includes(tag)) {
+                                tags.push(tag);
+                            }
+                        }
                         continue;
                     }
                     cachedList[token.address] = token;
