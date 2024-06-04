@@ -12,7 +12,7 @@ import Loading from "../Loading";
 import { CheckIcon, FileQuestionIcon } from "lucide-react";
 import { TokenList, isJupiterTrustedToken } from "@/lib/token";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { ScrollArea } from "../ui/scroll-area";
+import { ScrollArea, ScrollBar } from "../ui/scroll-area";
 import { Input } from "../ui/input";
 import TokenIcon from "./TokenIcon";
 import { Badge } from "../ui/badge";
@@ -102,38 +102,44 @@ const TokenListDialogContents: FC<
                 <DialogDescription></DialogDescription>
             </DialogHeader>
             <div className="flex flex-col gap-y-2.5">
-                <div className="flex flex-row gap-x-2 overflow-x-scroll">
-                    {TOP_TOKENS.map((tokenAddress) => {
-                        const token = tokenList[tokenAddress];
-                        const included = selectedTokens?.includes(tokenAddress);
-                        return (
-                            <div
-                                key={tokenAddress}
-                                className={cn(
-                                    "flex flex-row border cursor-pointer px-3 py-1.5 w-full items-center gap-x-2 hover:bg-secondary/80 rounded-md bg-card",
-                                    included &&
-                                        "border-primary/60 bg-primary/10",
-                                )}
-                                onClick={() => {
-                                    if (
-                                        selectedTokens &&
-                                        closeOnSelect &&
-                                        !selectedTokens.includes(token.address)
-                                    ) {
-                                        setOpen(false);
-                                    }
+                <ScrollArea>
+                    <div className="flex flex-row gap-x-2">
+                        {TOP_TOKENS.map((tokenAddress) => {
+                            const token = tokenList[tokenAddress];
+                            const included =
+                                selectedTokens?.includes(tokenAddress);
+                            return (
+                                <div
+                                    key={tokenAddress}
+                                    className={cn(
+                                        "flex flex-row border cursor-pointer px-3 py-1.5 w-full items-center gap-x-2 hover:bg-secondary/80 rounded-md bg-card",
+                                        included &&
+                                            "border-primary/60 bg-primary/10",
+                                    )}
+                                    onClick={() => {
+                                        if (
+                                            selectedTokens &&
+                                            closeOnSelect &&
+                                            !selectedTokens.includes(
+                                                token.address,
+                                            )
+                                        ) {
+                                            setOpen(false);
+                                        }
 
-                                    if (onSelect) {
-                                        onSelect(token.address);
-                                    }
-                                }}
-                            >
-                                <TokenIcon token={token} className="mr-2" />
-                                {token.symbol}
-                            </div>
-                        );
-                    })}
-                </div>
+                                        if (onSelect) {
+                                            onSelect(token.address);
+                                        }
+                                    }}
+                                >
+                                    <TokenIcon token={token} className="mr-2" />
+                                    {token.symbol}
+                                </div>
+                            );
+                        })}
+                    </div>
+                    <ScrollBar orientation="horizontal" />
+                </ScrollArea>
                 <Input
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.currentTarget.value)}
