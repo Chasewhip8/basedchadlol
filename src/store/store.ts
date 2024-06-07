@@ -1,3 +1,4 @@
+import { toast } from "@/components/ui/use-toast";
 import {
     FEE_LAMPORTS,
     FEE_WALLET,
@@ -9,6 +10,14 @@ import {
     VALUE_IN_MIN_FOR_FEE_USD,
 } from "@/lib/config";
 import {
+    getAddressLookupTableAccounts,
+    getPriorityFeeEstimate,
+    sendHeliusTransaction,
+} from "@/lib/helius/api";
+import { JUPITER_API, deserializeInstruction } from "@/lib/jupiter";
+import { selectiveArrayShallow } from "@/lib/selectiveShallow";
+import { CONNECTION } from "@/lib/solana";
+import {
     BSC_TOKEN,
     SOL_TOKEN,
     Token,
@@ -16,41 +25,26 @@ import {
     WRAPPED_SOL_MINT,
     convertTokenLamportsToNatural,
     convertTokenNaturalToLamports,
-    isJupiterTrustedToken,
 } from "@/lib/token";
-import { StateCreator } from "zustand";
-import { createWithEqualityFn } from "zustand/traditional";
-import { persist, subscribeWithSelector } from "zustand/middleware";
-import { shallow } from "zustand/shallow";
-import { original, produce } from "immer";
-import { JUPITER_API, deserializeInstruction } from "@/lib/jupiter";
+import { getUniqueId } from "@/lib/utils";
 import { QuoteResponse, SwapInstructionsResponse } from "@jup-ag/api";
-import {
-    selectiveArrayShallow,
-    selectiveShallow,
-} from "@/lib/selectiveShallow";
+import { WalletContextState } from "@solana/wallet-adapter-react";
 import {
     ComputeBudgetInstruction,
     ComputeBudgetProgram,
     PublicKey,
-    SystemInstruction,
     SystemProgram,
-    Transaction,
     TransactionInstruction,
     TransactionMessage,
     TransactionSignature,
     VersionedTransaction,
 } from "@solana/web3.js";
-import { getUniqueId } from "@/lib/utils";
 import base58 from "bs58";
-import {
-    getPriorityFeeEstimate,
-    getAddressLookupTableAccounts,
-    sendHeliusTransaction,
-} from "@/lib/helius/api";
-import { CONNECTION } from "@/lib/solana";
-import { WalletContextState } from "@solana/wallet-adapter-react";
-import { toast } from "@/components/ui/use-toast";
+import { produce } from "immer";
+import { StateCreator } from "zustand";
+import { persist, subscribeWithSelector } from "zustand/middleware";
+import { shallow } from "zustand/shallow";
+import { createWithEqualityFn } from "zustand/traditional";
 
 export interface CacheSlice {
     wallet?: WalletContextState;
@@ -844,7 +838,7 @@ const createSwapSlice: StateCreator<Store, [], [], SwapSlice> = (set, get) => ({
 
                     const correctedComputeUnitPrice = Math.max(
                         priorityFee,
-                        (10000 / computeLimit) * 1000000, // This is the min compute price for helius fast lane
+                        Math.ceil((10000 / computeLimit) * 1000000), // This is the min compute price for helius fast lane
                     );
 
                     const instructions: TransactionInstruction[] = [
