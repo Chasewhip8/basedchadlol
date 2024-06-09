@@ -330,6 +330,15 @@ const createSwapSlice: StateCreator<Store, [], [], SwapSlice> = (set, get) => ({
 
             const newTokens: InputTokenEntry[] = [];
             for (const tokenAddress in tokenList) {
+                if (newTokens.length >= 20) {
+                    toast({
+                        title: "Add Dust: Too many tokens",
+                        description:
+                            "There are too many dust tokens to swap in one action, 20 have been added.",
+                    });
+                    break;
+                }
+
                 if (!tokenList.hasOwnProperty(tokenAddress)) {
                     continue;
                 }
@@ -838,7 +847,7 @@ const createSwapSlice: StateCreator<Store, [], [], SwapSlice> = (set, get) => ({
 
                     const correctedComputeUnitPrice = Math.max(
                         priorityFee,
-                        Math.ceil((10000 / computeLimit) * 1000000), // This is the min compute price for helius fast lane
+                        Math.ceil((10001 / computeLimit) * 1000000), // This is the min compute price for helius fast lane
                     );
 
                     const instructions: TransactionInstruction[] = [
