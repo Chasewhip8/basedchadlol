@@ -16,6 +16,26 @@ const UserBalanceProvider: FC<PropsWithChildren> = ({ children }) => {
         enabled: Boolean(address), // Only run when there is a valid wallet address
     });
 
+    const _intents = useStore(
+        (state) => state.swapIntents,
+        (a, b) => {
+            console.log("test");
+            return (
+                a.length === b.length &&
+                a.every(
+                    (v, i) =>
+                        (v.status != "COMPLETED" &&
+                            b[i].status != "COMPLETED") ||
+                        v.status === b[i].status,
+                )
+            );
+        },
+    );
+
+    useEffect(() => {
+        refetch();
+    }, [_intents, refetch]);
+
     const heliusTokenList = useStore((state) => state.heliusTokenList);
     useEffect(() => {
         if (!heliusTokenList) {
